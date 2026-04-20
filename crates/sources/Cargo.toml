@@ -1,0 +1,24 @@
+[package]
+name = "madi-sources"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Official release-info clients (Nginx, PHP, MariaDB, phpMyAdmin)."
+
+[lints]
+workspace = true
+
+[dependencies]
+madi-core  = { workspace = true }
+reqwest    = { workspace = true }
+serde      = { workspace = true }
+serde_json = { workspace = true }
+scraper    = { workspace = true }
+semver     = { workspace = true }
+thiserror  = { workspace = true }
+tracing    = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true }

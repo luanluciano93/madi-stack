@@ -1,0 +1,18 @@
+[package]
+name = "madi-firewall"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Windows Firewall rules management via windows-rs."
+
+[lints]
+workspace = true
+
+[dependencies]
+thiserror = { workspace = true }
+tracing   = { workspace = true }
+
+[target.'cfg(windows)'.dependencies]
+windows = { workspace = true }

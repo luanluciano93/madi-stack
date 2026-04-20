@@ -1,0 +1,46 @@
+<script lang="ts">
+  let { active = $bindable() } = $props<{
+    active:
+      | 'geral'
+      | 'nginx'
+      | 'mariadb'
+      | 'php'
+      | 'configuracoes'
+      | 'atualizacoes'
+      | 'sobre';
+  }>();
+
+  const tabs = [
+    { id: 'geral', label: 'Geral', icon: '⌂' },
+    { id: 'nginx', label: 'Nginx', icon: '◐' },
+    { id: 'mariadb', label: 'MariaDB', icon: '◑' },
+    { id: 'php', label: 'PHP', icon: '◉' },
+    { id: 'configuracoes', label: 'Configurações', icon: '⚙' },
+    { id: 'atualizacoes', label: 'Atualizações', icon: '↻' },
+    { id: 'sobre', label: 'Sobre', icon: 'ⓘ' },
+  ] as const;
+</script>
+
+<aside
+  class="flex w-56 shrink-0 flex-col border-r border-zinc-800 bg-zinc-900/60 py-4"
+>
+  <div class="px-5 pb-4">
+    <h1 class="text-xl font-bold tracking-tight">MadiStack</h1>
+    <p class="text-xs text-zinc-500">v0.1.0 — dev</p>
+  </div>
+
+  <nav class="flex flex-col gap-0.5 px-2">
+    {#each tabs as tab}
+      <button
+        type="button"
+        class="flex items-center gap-3 rounded-md px-3 py-2 text-left text-sm transition-colors
+               hover:bg-zinc-800
+               {active === tab.id ? 'bg-zinc-800 text-white' : 'text-zinc-400'}"
+        onclick={() => (active = tab.id)}
+      >
+        <span class="w-4 text-center text-zinc-500">{tab.icon}</span>
+        {tab.label}
+      </button>
+    {/each}
+  </nav>
+</aside>

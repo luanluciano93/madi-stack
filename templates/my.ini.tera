@@ -1,0 +1,26 @@
+# MadiStack — MariaDB configuration (rendered from template)
+
+[mysqld]
+port        = {{ ports.mariadb }}
+bind-address = 127.0.0.1
+datadir     = "{{ install_dir }}/data/mariadb"
+tmpdir      = "{{ install_dir }}/tmp"
+log-error   = "{{ install_dir }}/logs/mariadb/mysql-error.log"
+pid-file    = "{{ install_dir }}/logs/mariadb/mysqld.pid"
+
+character-set-server = utf8mb4
+collation-server     = utf8mb4_unicode_ci
+
+default-storage-engine = InnoDB
+innodb_buffer_pool_size = 256M
+innodb_flush_log_at_trx_commit = 2
+
+max_connections = 100
+table_open_cache = 512
+
+[client]
+port     = {{ ports.mariadb }}
+default-character-set = utf8mb4
+
+[mysql]
+default-character-set = utf8mb4

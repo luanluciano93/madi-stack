@@ -1,0 +1,105 @@
+# --- Claude / assistente (local only) ---
+CLAUDE.md
+.claude/
+.cursor/
+.aider*
+.continue/
+
+# --- Rust ---
+target/
+**/target/
+*.pdb
+*.rlib
+*.rmeta
+Cargo.lock.bak
+
+# --- Tauri ---
+src-tauri/target/
+src-tauri/gen/
+src-tauri/WixTools/
+
+# --- Node / frontend ---
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/.svelte-kit/
+frontend/.vite/
+.npm/
+.pnpm-store/
+.yarn/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# --- Componentes baixados em runtime (nunca commitar) ---
+bin/nginx/
+bin/php/
+bin/mariadb/
+bin/phpmyadmin/
+data/
+www/
+logs/
+tmp/
+madistack.toml
+madistack.json
+
+# --- Binários de build / distribuição ---
+*.exe
+*.dll
+*.so
+*.dylib
+!frontend/**/*.exe
+dist/
+release/
+
+# --- IDE / editor ---
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json.example
+.idea/
+*.iml
+*.swp
+*.swo
+*~
+.project
+.settings/
+.zed/
+
+# --- Sistema operacional ---
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# --- Segredos / ambiente ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.pfx
+*.p12
+secrets/
+signing/
+
+# --- Licenças geradas ---
+THIRD_PARTY_LICENSES.md
+
+# --- Coverage / testes ---
+coverage/
+tarpaulin-report.html
+cobertura.xml
+lcov.info
+*.profraw
+*.profdata
+
+# --- Temporários ---
+*.tmp
+*.bak
+*.orig
+*.rej

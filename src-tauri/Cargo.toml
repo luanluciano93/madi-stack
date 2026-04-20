@@ -1,0 +1,50 @@
+[package]
+name = "madistack"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "MadiStack — portable Windows web stack (Nginx + MariaDB + PHP + phpMyAdmin)."
+default-run = "madistack"
+
+[lints]
+workspace = true
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri               = { version = "2", features = ["tray-icon"] }
+tauri-plugin-dialog = "2"
+tauri-plugin-shell  = "2"
+tauri-plugin-fs     = "2"
+tauri-plugin-log    = "2"
+
+# Internal crates
+madi-core        = { workspace = true }
+madi-sources     = { workspace = true }
+madi-downloader  = { workspace = true }
+madi-config-gen  = { workspace = true }
+madi-state-store = { workspace = true }
+madi-services    = { workspace = true }
+madi-firewall    = { workspace = true }
+madi-updater     = { workspace = true }
+madi-logs        = { workspace = true }
+
+# Runtime deps
+tokio              = { workspace = true }
+reqwest            = { workspace = true }
+serde              = { workspace = true }
+serde_json         = { workspace = true }
+anyhow             = { workspace = true }
+thiserror          = { workspace = true }
+tracing            = { workspace = true }
+tracing-subscriber = { workspace = true }
+parking_lot        = { workspace = true }
+directories        = { workspace = true }
+
+[features]
+# this feature is used for production builds or when a dev server is not specified
+# DO NOT REMOVE!!
+custom-protocol = ["tauri/custom-protocol"]

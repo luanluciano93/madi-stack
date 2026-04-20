@@ -1,0 +1,18 @@
+[package]
+name = "madi-config-gen"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Renders nginx.conf / php.ini / my.ini from Tera templates."
+
+[lints]
+workspace = true
+
+[dependencies]
+madi-core = { workspace = true }
+tera      = { workspace = true }
+serde     = { workspace = true }
+thiserror = { workspace = true }
+tracing   = { workspace = true }

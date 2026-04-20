@@ -1,0 +1,21 @@
+# MadiStack — site template for virtual hosts (Sprint 3)
+# {{ site_name }}
+
+server {
+    listen 127.0.0.1:{{ ports.http }};
+    server_name {{ site_name }}.test;
+
+    root "{{ document_root }}";
+    index index.php index.html;
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location ~ \.php$ {
+        fastcgi_pass 127.0.0.1:{{ ports.php_fcgi }};
+        fastcgi_index index.php;
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+    }
+}

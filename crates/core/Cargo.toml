@@ -1,0 +1,16 @@
+[package]
+name = "madi-core"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Shared types and traits for MadiStack."
+
+[lints]
+workspace = true
+
+[dependencies]
+serde      = { workspace = true }
+semver     = { workspace = true }
+thiserror  = { workspace = true }

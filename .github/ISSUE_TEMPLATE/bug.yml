@@ -1,0 +1,36 @@
+name: Bug report
+description: Reportar um problema
+labels: [bug]
+body:
+  - type: input
+    attributes:
+      label: Versão do MadiStack
+      placeholder: v0.1.0
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Versão do Windows
+      placeholder: Windows 11 Pro 23H2
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Descrição
+      description: O que aconteceu? O que você esperava?
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Passos para reproduzir
+      placeholder: |
+        1. Abri o MadiStack
+        2. Cliquei em Start no Nginx
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Logs
+      description: Cole os logs de `logs/madistack.log` se tiver.
+      render: shell

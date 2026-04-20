@@ -1,0 +1,24 @@
+[package]
+name = "madistack-cli"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Command-line harness for the MadiStack internal crates."
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "madistack"
+path = "src/main.rs"
+
+[dependencies]
+madi-core    = { workspace = true }
+madi-sources = { workspace = true }
+
+tokio              = { workspace = true }
+anyhow             = { workspace = true }
+tracing            = { workspace = true }
+tracing-subscriber = { workspace = true }

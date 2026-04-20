@@ -1,0 +1,42 @@
+; MadiStack — PHP configuration (rendered from template)
+
+engine = On
+short_open_tag = Off
+precision = 14
+output_buffering = 4096
+zlib.output_compression = Off
+implicit_flush = Off
+
+max_execution_time = 30
+max_input_time = 60
+memory_limit = 256M
+
+error_reporting = E_ALL
+display_errors = On
+display_startup_errors = On
+log_errors = On
+error_log = "{{ install_dir }}/logs/php/php-error.log"
+
+post_max_size = 64M
+upload_max_filesize = 64M
+max_file_uploads = 20
+
+default_charset = "UTF-8"
+
+extension_dir = "{{ install_dir }}/bin/php/ext"
+
+extension=mbstring
+extension=mysqli
+extension=pdo_mysql
+extension=openssl
+extension=curl
+extension=gd
+extension=fileinfo
+extension=zip
+extension=intl
+extension=sodium
+
+date.timezone = "America/Sao_Paulo"
+
+[Session]
+session.save_path = "{{ install_dir }}/tmp"

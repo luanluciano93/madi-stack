@@ -1,0 +1,48 @@
+worker_processes  auto;
+error_log  "{{ install_dir }}/logs/nginx/error.log" warn;
+pid        "{{ install_dir }}/logs/nginx/nginx.pid";
+
+events {
+    worker_connections  1024;
+}
+
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+
+    sendfile        on;
+    keepalive_timeout 65;
+
+    access_log "{{ install_dir }}/logs/nginx/access.log";
+
+    server {
+        listen       127.0.0.1:{{ ports.http }};
+        server_name  localhost;
+
+        root "{{ document_root }}";
+        index index.php index.html;
+
+        location / {
+            try_files $uri $uri/ /index.php?$query_string;
+        }
+
+        location /phpmyadmin {
+            alias "{{ install_dir }}/bin/phpmyadmin";
+            index index.php;
+            location ~ \.php$ {
+                fastcgi_pass 127.0.0.1:{{ ports.php_fcgi }};
+                include fastcgi_params;
+                fastcgi_param SCRIPT_FILENAME $request_filename;
+            }
+        }
+
+        location ~ \.php$ {
+            fastcgi_pass 127.0.0.1:{{ ports.php_fcgi }};
+            fastcgi_index index.php;
+            include fastcgi_params;
+            fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        }
+    }
+
+    include "{{ install_dir }}/config/sites-enabled/*.conf";
+}

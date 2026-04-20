@@ -1,0 +1,16 @@
+* text=auto eol=lf
+
+# Templates sempre LF (MariaDB reclama de CRLF em my.ini)
+templates/** text eol=lf
+*.tera       text eol=lf
+*.conf       text eol=lf
+*.ini        text eol=lf
+*.toml       text eol=lf
+
+# Binários
+*.png binary
+*.ico binary
+*.jpg binary
+*.zip binary
+*.exe binary
+*.dll binary

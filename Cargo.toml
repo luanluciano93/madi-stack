@@ -1,0 +1,115 @@
+[workspace]
+resolver = "2"
+members = [
+    "src-tauri",
+    "crates/core",
+    "crates/sources",
+    "crates/downloader",
+    "crates/config-gen",
+    "crates/state-store",
+    "crates/services",
+    "crates/firewall",
+    "crates/updater",
+    "crates/logs",
+    "crates/cli",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.75"
+authors = ["Luan Luciano <luanluciano93@gmail.com>"]
+license = "MIT"
+repository = "https://github.com/luanluciano93/MadiStack"
+homepage = "https://github.com/luanluciano93/MadiStack"
+
+[workspace.dependencies]
+# Internal crates
+madi-core        = { path = "crates/core" }
+madi-sources     = { path = "crates/sources" }
+madi-downloader  = { path = "crates/downloader" }
+madi-config-gen  = { path = "crates/config-gen" }
+madi-state-store = { path = "crates/state-store" }
+madi-services    = { path = "crates/services" }
+madi-firewall    = { path = "crates/firewall" }
+madi-updater     = { path = "crates/updater" }
+madi-logs        = { path = "crates/logs" }
+
+# Async / runtime
+tokio      = { version = "1", features = ["full"] }
+tokio-util = { version = "0.7", features = ["io"] }
+futures    = "0.3"
+
+# HTTP / parsing
+reqwest    = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "stream"] }
+serde      = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml       = "0.8"
+scraper    = "0.20"
+semver     = { version = "1", features = ["serde"] }
+
+# Templating
+tera = "1"
+
+# Crypto / archives
+sha2 = "0.10"
+hex  = "0.4"
+zip  = { version = "2", default-features = false, features = ["deflate"] }
+
+# Errors / logging
+thiserror          = "2"
+anyhow             = "1"
+tracing            = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Utilities
+parking_lot = "0.12"
+once_cell   = "1"
+sysinfo     = "0.32"
+notify      = "7"
+directories = "5"
+bytes       = "1"
+
+# Windows
+windows = { version = "0.58", features = [
+    "Win32_Foundation",
+    "Win32_System_Threading",
+    "Win32_System_JobObjects",
+    "Win32_Security",
+    "Win32_NetworkManagement_WindowsFirewall",
+    "Win32_System_Com",
+    "Win32_UI_Shell",
+] }
+
+[workspace.lints.rust]
+unsafe_code = "deny"
+unused_must_use = "warn"
+
+[workspace.lints.clippy]
+all      = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+# too noisy for a first scaffold; we'll tighten later
+module_name_repetitions = "allow"
+missing_errors_doc      = "allow"
+missing_panics_doc      = "allow"
+must_use_candidate      = "allow"
+needless_pass_by_value  = "allow"
+# product/proper names trigger false positives here
+doc_markdown            = "allow"
+# narrow allowances for scaffold-stage code
+unused_async            = "allow"
+
+[profile.release]
+opt-level     = 3
+lto           = "fat"
+codegen-units = 1
+strip         = "symbols"
+panic         = "abort"
+
+[profile.dev]
+opt-level = 0
+debug     = true
+
+[profile.dev.package."*"]
+# speeds up dev builds: optimize dependencies, not our code
+opt-level = 2
