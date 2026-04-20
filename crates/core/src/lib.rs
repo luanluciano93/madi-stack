@@ -5,6 +5,7 @@
 //! other internal crates and the Tauri binary.
 
 use std::fmt;
+use std::net::Ipv4Addr;
 
 use serde::{Deserialize, Serialize};
 
@@ -83,6 +84,18 @@ pub struct PortConfig {
     pub http: u16,
     pub mariadb: u16,
     pub php_fcgi: u16,
+    /// Address the public services (HTTP, MariaDB) bind to.
+    ///
+    /// Defaults to `127.0.0.1` (local only). Set to `0.0.0.0` to expose the
+    /// stack on the LAN — equivalent to USBWebServer's `local`/`slocal`
+    /// toggles. The FastCGI listener stays on `127.0.0.1` regardless: nginx
+    /// and `php-cgi` always colocate, and exposing FastCGI is never right.
+    #[serde(default = "default_bind_address")]
+    pub bind_address: Ipv4Addr,
+}
+
+fn default_bind_address() -> Ipv4Addr {
+    Ipv4Addr::LOCALHOST
 }
 
 impl Default for PortConfig {
@@ -91,6 +104,7 @@ impl Default for PortConfig {
             http: 80,
             mariadb: 3306,
             php_fcgi: 9000,
+            bind_address: default_bind_address(),
         }
     }
 }

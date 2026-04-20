@@ -16,7 +16,7 @@ http {
     access_log "{{ install_dir }}/logs/nginx/access.log";
 
     server {
-        listen       127.0.0.1:{{ ports.http }};
+        listen       {{ ports.bind_address }}:{{ ports.http }};
         server_name  localhost;
 
         root "{{ document_root }}";

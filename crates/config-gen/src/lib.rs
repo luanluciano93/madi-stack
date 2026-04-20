@@ -36,6 +36,25 @@ pub enum ConfigGenError {
 
 pub type ConfigGenResult<T> = Result<T, ConfigGenError>;
 
+/// Default PHP extensions enabled on first `init`.
+///
+/// Kept conservative on purpose: every entry here is something a PHP app
+/// commonly fails without. Optional extras (`sqlsrv`, `xdebug`, `redis`,
+/// `imagick`, …) are opt-in via the GUI and appended to `php_extensions`
+/// at render time.
+pub const DEFAULT_PHP_EXTENSIONS: &[&str] = &[
+    "mbstring",
+    "mysqli",
+    "pdo_mysql",
+    "openssl",
+    "curl",
+    "gd",
+    "fileinfo",
+    "zip",
+    "intl",
+    "sodium",
+];
+
 /// Inputs for every template render.
 ///
 /// Paths are injected into configs as strings with forward slashes. Nginx
@@ -46,6 +65,9 @@ pub struct RenderContext<'a> {
     pub install_dir: &'a Path,
     pub ports: PortConfig,
     pub document_root: &'a Path,
+    /// Names of PHP extensions to enable in `php.ini` (order preserved).
+    /// Use [`DEFAULT_PHP_EXTENSIONS`] for the baseline set.
+    pub php_extensions: &'a [&'a str],
 }
 
 impl RenderContext<'_> {
@@ -54,6 +76,7 @@ impl RenderContext<'_> {
         ctx.insert("install_dir", &path_to_posix(self.install_dir));
         ctx.insert("document_root", &path_to_posix(self.document_root));
         ctx.insert("ports", &self.ports);
+        ctx.insert("php_extensions", self.php_extensions);
         ctx
     }
 }
@@ -149,8 +172,10 @@ mod tests {
                 http: 8080,
                 mariadb: 3310,
                 php_fcgi: 9001,
+                bind_address: std::net::Ipv4Addr::LOCALHOST,
             },
             document_root: docroot,
+            php_extensions: DEFAULT_PHP_EXTENSIONS,
         }
     }
 
@@ -208,6 +233,42 @@ mod tests {
         let out = tera.render(NAME_SITE, &tctx).unwrap();
         assert!(out.contains("server_name blog.test;"), "{out}");
         assert!(out.contains(r#"root "/m/sites/blog";"#));
+    }
+
+    #[test]
+    fn bind_address_propagates_to_nginx_and_mariadb() {
+        let install = PathBuf::from("/m");
+        let docroot = PathBuf::from("/m/www");
+        let mut c = ctx(&install, &docroot);
+        c.ports.bind_address = std::net::Ipv4Addr::UNSPECIFIED; // 0.0.0.0
+
+        let tera = build_engine().unwrap();
+        let nginx = tera.render(NAME_NGINX, &c.to_tera()).unwrap();
+        let my = tera.render(NAME_MY, &c.to_tera()).unwrap();
+
+        assert!(nginx.contains("listen       0.0.0.0:8080;"), "{nginx}");
+        assert!(my.contains("bind-address = 0.0.0.0"), "{my}");
+        // FastCGI must stay local regardless of bind_address.
+        assert!(nginx.contains("fastcgi_pass 127.0.0.1:9001;"), "{nginx}");
+    }
+
+    #[test]
+    fn php_extensions_are_dynamic() {
+        let install = PathBuf::from("/m");
+        let docroot = PathBuf::from("/m/www");
+        let mut c = ctx(&install, &docroot);
+        let custom = ["mbstring", "sqlsrv", "pdo_sqlsrv"];
+        c.php_extensions = &custom;
+
+        let tera = build_engine().unwrap();
+        let out = tera.render(NAME_PHP, &c.to_tera()).unwrap();
+
+        assert!(out.contains("extension=sqlsrv"), "{out}");
+        assert!(out.contains("extension=pdo_sqlsrv"), "{out}");
+        assert!(
+            !out.contains("extension=mysqli"),
+            "default set leaked: {out}"
+        );
     }
 
     #[test]

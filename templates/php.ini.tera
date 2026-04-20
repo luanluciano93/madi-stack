@@ -25,16 +25,9 @@ default_charset = "UTF-8"
 
 extension_dir = "{{ install_dir }}/bin/php/ext"
 
-extension=mbstring
-extension=mysqli
-extension=pdo_mysql
-extension=openssl
-extension=curl
-extension=gd
-extension=fileinfo
-extension=zip
-extension=intl
-extension=sodium
+{% for ext in php_extensions -%}
+extension={{ ext }}
+{% endfor -%}
 
 date.timezone = "America/Sao_Paulo"
 

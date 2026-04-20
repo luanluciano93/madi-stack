@@ -2,7 +2,7 @@
 
 [mysqld]
 port        = {{ ports.mariadb }}
-bind-address = 127.0.0.1
+bind-address = {{ ports.bind_address }}
 datadir     = "{{ install_dir }}/data/mariadb"
 tmpdir      = "{{ install_dir }}/tmp"
 log-error   = "{{ install_dir }}/logs/mariadb/mysql-error.log"

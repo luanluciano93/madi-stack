@@ -2,7 +2,7 @@
 # {{ site_name }}
 
 server {
-    listen 127.0.0.1:{{ ports.http }};
+    listen {{ ports.bind_address }}:{{ ports.http }};
     server_name {{ site_name }}.test;
 
     root "{{ document_root }}";
