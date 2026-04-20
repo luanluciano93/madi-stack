@@ -295,6 +295,37 @@ pub async fn install_all(
 
 pub const UPDATE_EVENT: &str = "update-progress";
 
+/// After a swap, try to boot the service and confirm it stays up for a few
+/// seconds. Catches corrupted/incompatible builds that slipped past SHA256.
+/// phpMyAdmin has no process — the signature check (`index.php` present) is
+/// enough, so we skip it here.
+fn build_smoke_test(
+    component: Component,
+    supervisor: std::sync::Arc<madi_services::Supervisor>,
+) -> Option<madi_updater::SmokeFn> {
+    if matches!(component, Component::PhpMyAdmin) {
+        return None;
+    }
+    Some(Box::new(move |_dir, component| {
+        Box::pin(async move {
+            supervisor
+                .start(component)
+                .await
+                .map_err(|e| format!("start failed: {e}"))?;
+            tokio::time::sleep(std::time::Duration::from_secs(3)).await;
+            let status = supervisor.status(component);
+            if status != ServiceStatus::Running {
+                // Stop best-effort so the rollback rename isn't blocked by a
+                // half-alive process holding the exe.
+                let _ = supervisor.stop(component).await;
+                return Err(format!("service not running after boot ({status:?})"));
+            }
+            // Leave it running — the user expected a working update.
+            Ok(())
+        })
+    }))
+}
+
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct UpdateStatusDto {
     pub slug: String,
@@ -405,8 +436,9 @@ pub async fn updater_apply(
     });
 
     let client = madi_sources::build_client();
+    let smoke = build_smoke_test(c, state.supervisor.clone());
     let apply_res =
-        madi_updater::apply(&client, &install_dir, c, Some(tx.clone()), None, None).await;
+        madi_updater::apply(&client, &install_dir, c, Some(tx.clone()), None, smoke).await;
     drop(tx);
     let _ = bridge.await;
 

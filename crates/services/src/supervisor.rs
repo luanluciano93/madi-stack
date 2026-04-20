@@ -601,7 +601,11 @@ mod imp {
             // The bind failure is authoritative; the occupier lookup is
             // best-effort and only improves the error message.
             let occupier = crate::port_occupier(port);
-            Err(ServiceError::PortBusy { port, occupier })
+            Err(ServiceError::PortBusy {
+                component,
+                port,
+                occupier,
+            })
         }
     }
 
