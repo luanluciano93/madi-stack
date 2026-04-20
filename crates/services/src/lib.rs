@@ -12,6 +12,9 @@ use std::path::PathBuf;
 
 use madi_core::{Component, ServiceStatus};
 
+#[cfg(windows)]
+pub mod job;
+
 #[derive(Debug, thiserror::Error)]
 pub enum ServiceError {
     #[error("I/O error: {0}")]
