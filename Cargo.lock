@@ -2416,6 +2416,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "madi-core",
+ "madi-downloader",
  "madi-sources",
  "tokio",
  "tracing",

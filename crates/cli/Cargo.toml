@@ -15,8 +15,9 @@ name = "madistack"
 path = "src/main.rs"
 
 [dependencies]
-madi-core    = { workspace = true }
-madi-sources = { workspace = true }
+madi-core       = { workspace = true }
+madi-sources    = { workspace = true }
+madi-downloader = { workspace = true }
 
 tokio              = { workspace = true }
 anyhow             = { workspace = true }
