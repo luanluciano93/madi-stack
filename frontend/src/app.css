@@ -1,9 +1,26 @@
 @import 'tailwindcss';
 
+/* MadiStack brand palette
+ * Background: pure black. Text: white. Accent: brand green (from logo).
+ * Expose `--green-theme-submit-btn-bg` as the canonical accent token so
+ * components can reference it by name; the `brand-*` scale is the Tailwind
+ * utility surface (`bg-brand-500`, `text-brand-400`, ...).
+ */
 @theme {
-  --color-brand-50: oklch(0.97 0.02 250);
-  --color-brand-500: oklch(0.62 0.18 250);
-  --color-brand-600: oklch(0.55 0.19 250);
+  --color-bg: #000000;
+  --color-surface: #0a0a0a;
+  --color-surface-2: #141414;
+  --color-border: #1f1f1f;
+  --color-fg: #ffffff;
+  --color-fg-muted: #a3a3a3;
+
+  --green-theme-submit-btn-bg: #3ddc2b;
+  --green-theme-submit-btn-bg-hover: #2fb81f;
+
+  --color-brand-400: #6be85c;
+  --color-brand-500: var(--green-theme-submit-btn-bg);
+  --color-brand-600: var(--green-theme-submit-btn-bg-hover);
+  --color-brand-700: #238a17;
 }
 
 html,
@@ -11,6 +28,8 @@ body,
 #app {
   height: 100%;
   margin: 0;
+  background: var(--color-bg);
+  color: var(--color-fg);
 }
 
 body {
@@ -25,4 +44,9 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   user-select: none;
+}
+
+::selection {
+  background: var(--green-theme-submit-btn-bg);
+  color: #000;
 }
