@@ -1,0 +1,17 @@
+[package]
+name = "madi-logs"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Live-tail log files into a ring buffer + broadcast channel."
+
+[lints]
+workspace = true
+
+[dependencies]
+tokio     = { workspace = true }
+notify    = { workspace = true }
+thiserror = { workspace = true }
+tracing   = { workspace = true }

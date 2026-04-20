@@ -34,16 +34,18 @@ yarn-error.log*
 pnpm-debug.log*
 
 # --- Componentes baixados em runtime (nunca commitar) ---
-bin/nginx/
-bin/php/
-bin/mariadb/
-bin/phpmyadmin/
-data/
-www/
-logs/
-tmp/
-madistack.toml
-madistack.json
+# Anchored (leading /) so we only ignore the runtime dirs at the repo root —
+# crates/logs/ is source code and must stay tracked.
+/bin/nginx/
+/bin/php/
+/bin/mariadb/
+/bin/phpmyadmin/
+/data/
+/www/
+/logs/
+/tmp/
+/madistack.toml
+/madistack.json
 
 # --- Binários de build / distribuição ---
 *.exe

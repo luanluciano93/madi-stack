@@ -113,7 +113,13 @@ mod tests {
 
     fn rand_id() -> String {
         use std::time::{SystemTime, UNIX_EPOCH};
-        format!("{}", SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos())
+        format!(
+            "{}",
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        )
     }
 
     #[test]

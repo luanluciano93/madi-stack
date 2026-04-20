@@ -97,7 +97,9 @@ async fn cmd_fetch(args: &[String]) -> Result<()> {
     println!("  url       {}", info.download_url);
     println!(
         "  sha256    {}",
-        info.sha256.as_deref().unwrap_or("(not published — skip verification)")
+        info.sha256
+            .as_deref()
+            .unwrap_or("(not published — skip verification)")
     );
     println!();
 
@@ -132,7 +134,11 @@ async fn cmd_fetch(args: &[String]) -> Result<()> {
 
     let elapsed = started.elapsed();
     println!();
-    println!("Extracted into {} ({:.1}s total).", target.display(), elapsed.as_secs_f64());
+    println!(
+        "Extracted into {} ({:.1}s total).",
+        target.display(),
+        elapsed.as_secs_f64()
+    );
     Ok(())
 }
 
