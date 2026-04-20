@@ -17,6 +17,7 @@
   let fwStatus = $state<FirewallRulesStatus | null>(null);
   let fwBusy = $state(false);
   let fwError = $state<string | null>(null);
+  let fwSuccess = $state<string | null>(null);
 
   async function refreshFirewall() {
     try {
@@ -26,12 +27,23 @@
     }
   }
 
+  function flashSuccess(msg: string) {
+    fwSuccess = msg;
+    // Clear the flash after a few seconds so the message doesn't stick
+    // around forever — long enough to read, short enough not to clutter.
+    setTimeout(() => {
+      if (fwSuccess === msg) fwSuccess = null;
+    }, 4000);
+  }
+
   async function ensureFirewall() {
     fwBusy = true;
     fwError = null;
+    fwSuccess = null;
     try {
       await ipc.firewallEnsureRules();
       await refreshFirewall();
+      flashSuccess('Regras aplicadas com sucesso.');
     } catch (e) {
       fwError = String(e);
     } finally {
@@ -42,9 +54,11 @@
   async function removeFirewall() {
     fwBusy = true;
     fwError = null;
+    fwSuccess = null;
     try {
       await ipc.firewallRemoveRules();
       await refreshFirewall();
+      flashSuccess('Regras removidas.');
     } catch (e) {
       fwError = String(e);
     } finally {
@@ -97,13 +111,26 @@
     }
   }
 
-  function warnFor(key: 'http' | 'mariadb' | 'php_fcgi'): string | null {
+  interface PortWarning {
+    text: string;
+    /// `self` = we're the occupier (calm tone). `conflict` = someone else is
+    /// holding the port and we won't be able to start.
+    kind: 'self' | 'conflict';
+  }
+
+  function warnFor(key: 'http' | 'mariadb' | 'php_fcgi'): PortWarning | null {
     const ins = inspections[key];
     if (!ins || ins.free) return null;
     const o = ins.occupier;
-    if (!o) return 'ocupada por processo desconhecido';
+    if (ins.is_self) {
+      return { text: 'em uso pelo próprio MadiStack', kind: 'self' };
+    }
+    if (!o) return { text: 'ocupada por processo desconhecido', kind: 'conflict' };
     const name = o.process_name ?? '<desconhecido>';
-    return `ocupada por pid ${o.pid} (${name})`;
+    return {
+      text: `ocupada por pid ${o.pid} (${name})`,
+      kind: 'conflict',
+    };
   }
 </script>
 
@@ -133,7 +160,8 @@
           class="rounded-md border border-zinc-800 bg-zinc-900 px-3 py-2"
         />
         {#if warnFor('http')}
-          <span class="text-xs text-amber-400">{warnFor('http')}</span>
+          {@const w = warnFor('http')!}
+          <span class="text-xs {w.kind === 'self' ? 'text-emerald-400' : 'text-amber-400'}">{w.text}</span>
         {/if}
       </label>
       <label class="flex flex-col gap-1 text-sm">
@@ -147,7 +175,8 @@
           class="rounded-md border border-zinc-800 bg-zinc-900 px-3 py-2"
         />
         {#if warnFor('mariadb')}
-          <span class="text-xs text-amber-400">{warnFor('mariadb')}</span>
+          {@const w = warnFor('mariadb')!}
+          <span class="text-xs {w.kind === 'self' ? 'text-emerald-400' : 'text-amber-400'}">{w.text}</span>
         {/if}
       </label>
       <label class="flex flex-col gap-1 text-sm">
@@ -161,7 +190,8 @@
           class="rounded-md border border-zinc-800 bg-zinc-900 px-3 py-2"
         />
         {#if warnFor('php_fcgi')}
-          <span class="text-xs text-amber-400">{warnFor('php_fcgi')}</span>
+          {@const w = warnFor('php_fcgi')!}
+          <span class="text-xs {w.kind === 'self' ? 'text-emerald-400' : 'text-amber-400'}">{w.text}</span>
         {/if}
       </label>
       <label class="flex flex-col gap-1 text-sm">
@@ -269,6 +299,8 @@
         </button>
         {#if fwError}
           <span class="text-sm text-red-400">{fwError}</span>
+        {:else if fwSuccess}
+          <span class="text-sm text-emerald-400">{fwSuccess}</span>
         {/if}
       </div>
     </fieldset>

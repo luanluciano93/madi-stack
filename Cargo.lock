@@ -2244,6 +2244,8 @@ dependencies = [
 name = "madi-firewall"
 version = "0.1.0"
 dependencies = [
+ "serde",
+ "serde_json",
  "thiserror 2.0.18",
  "tracing",
  "windows 0.58.0",
@@ -2366,6 +2368,16 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
+]
+
+[[package]]
+name = "madistack-firewall-helper"
+version = "0.1.0"
+dependencies = [
+ "embed-resource",
+ "madi-firewall",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

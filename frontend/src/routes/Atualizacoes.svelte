@@ -156,9 +156,14 @@
           <div class="min-w-0 flex-1">
             <div class="font-medium">{DISPLAY_NAME[row.slug]}</div>
             <div class="text-xs text-zinc-500">
-              instalado: <span class="font-mono text-zinc-300"
-                >{row.current ?? '—'}</span
-              >
+              instalado:
+              {#if row.current}
+                <span class="font-mono text-zinc-300">{row.current}</span>
+              {:else if row.installed_on_disk}
+                <span class="font-mono text-amber-400" title="Binário presente em bin/, mas o MadiStack não registrou a versão. Reinstale para sincronizar.">versão desconhecida</span>
+              {:else}
+                <span class="font-mono text-zinc-500">—</span>
+              {/if}
               · disponível:
               <span
                 class="font-mono {row.update_available
@@ -180,6 +185,8 @@
             </button>
           {:else if row.current}
             <span class="text-xs text-zinc-500">em dia</span>
+          {:else if row.installed_on_disk}
+            <span class="text-xs text-amber-400" title="Reinstale para registrar a versão e habilitar auto-update.">instalado (reinstale para auto-update)</span>
           {:else}
             <span class="text-xs text-zinc-500">não instalado</span>
           {/if}

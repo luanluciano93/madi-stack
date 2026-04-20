@@ -11,6 +11,10 @@
 #![allow(unsafe_code)]
 #![cfg_attr(not(windows), allow(unused))]
 
+pub mod elevated;
+
+pub use elevated::{run_elevated_ensure, ElevatedError, ElevatedResult};
+
 use std::path::{Path, PathBuf};
 
 #[cfg(windows)]
@@ -165,6 +169,31 @@ pub fn ensure_madistack_rules(install_dir: &Path) -> FirewallResult<()> {
         ),
     ];
     ensure_inbound_rules(&rules)
+}
+
+/// Build the default MadiStack rule set without applying it. Used by the
+/// elevated helper path so the main process can hand a pre-built rule list
+/// to `run_elevated_ensure`.
+#[must_use]
+pub fn madistack_rules(install_dir: &Path) -> Vec<FirewallRule> {
+    let bin = install_dir.join("bin");
+    vec![
+        FirewallRule::new(
+            "MadiStack — Nginx",
+            "Allow inbound HTTP traffic to the MadiStack Nginx server.",
+            bin.join("nginx").join("nginx.exe"),
+        ),
+        FirewallRule::new(
+            "MadiStack — MariaDB",
+            "Allow inbound connections to the MadiStack MariaDB server.",
+            bin.join("mariadb").join("bin").join("mysqld.exe"),
+        ),
+        FirewallRule::new(
+            "MadiStack — PHP FastCGI",
+            "Allow inbound FastCGI traffic to the MadiStack PHP runtime.",
+            bin.join("php").join("php-cgi.exe"),
+        ),
+    ]
 }
 
 /// Remove a rule previously added by us. Absent rules are silently ignored.

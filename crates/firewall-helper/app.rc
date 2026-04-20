@@ -1,0 +1,8 @@
+#define RT_MANIFEST 24
+1 RT_MANIFEST "app.manifest"
+
+// ID 1 is conventional for the "main" icon — Windows Explorer and the UAC
+// prompt pick the lowest-numbered ICON resource automatically. Path is
+// relative to this .rc file; we reuse the Tauri-generated icon so the
+// helper blends in with the main app visually.
+1 ICON "..\\..\\src-tauri\\icons\\icon.ico"

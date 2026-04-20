@@ -45,24 +45,34 @@ pub fn port_available(port: u16) -> bool {
     madi_services::is_port_available(port)
 }
 
-/// Return `{ free, occupier? }`. When `free` is false, `occupier` carries
-/// the PID + process name currently bound to the port (best-effort — may be
-/// `null` if the owner is a privileged service we can't introspect).
+/// Return `{ free, occupier?, is_self }`. `is_self` is true when the occupier
+/// is a MadiStack-managed binary (exe path sits inside `install_dir/bin`) —
+/// the UI uses it to render a calm "em uso pelo MadiStack" instead of the
+/// red conflict warning.
 #[tauri::command]
-pub fn port_inspect(port: u16) -> PortInspectionDto {
+pub fn port_inspect(port: u16, state: tauri::State<'_, AppState>) -> PortInspectionDto {
     let free = madi_services::is_port_available(port);
     let occupier = if free {
         None
     } else {
         madi_services::port_occupier(port)
     };
-    PortInspectionDto { free, occupier }
+    let is_self = occupier
+        .as_ref()
+        .and_then(|o| o.exe_path.as_deref())
+        .is_some_and(|p| p.starts_with(state.supervisor.install_dir().join("bin")));
+    PortInspectionDto {
+        free,
+        occupier,
+        is_self,
+    }
 }
 
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct PortInspectionDto {
     pub free: bool,
     pub occupier: Option<madi_services::PortOccupier>,
+    pub is_self: bool,
 }
 
 #[tauri::command]
@@ -332,6 +342,10 @@ pub struct UpdateStatusDto {
     pub current: Option<String>,
     pub available: String,
     pub update_available: bool,
+    /// True when the signature binary is present on disk. Lets the UI say
+    /// "instalado (versão desconhecida)" when the install predates the
+    /// version-tracking code, instead of the misleading "não instalado".
+    pub installed_on_disk: bool,
 }
 
 #[derive(Debug, Clone, serde::Serialize)]
@@ -361,6 +375,7 @@ pub async fn updater_check(
     state: tauri::State<'_, AppState>,
 ) -> Result<Vec<UpdateStatusDto>, String> {
     let installed = state.stored.read().installed.clone();
+    let install_dir = state.supervisor.install_dir().to_path_buf();
     let client = madi_sources::build_client();
     let statuses = madi_updater::check_all(&client, |c| installed.get(&c).cloned())
         .await
@@ -372,6 +387,7 @@ pub async fn updater_check(
             current: s.current.map(|v| v.to_string()),
             available: s.available.to_string(),
             update_available: s.update_available,
+            installed_on_disk: crate::install::is_installed(&install_dir, s.component),
         })
         .collect())
 }
@@ -517,7 +533,35 @@ const FIREWALL_RULE_PHP: &str = "MadiStack — PHP FastCGI";
 #[tauri::command]
 pub fn firewall_ensure_rules(state: tauri::State<'_, AppState>) -> Result<(), String> {
     let install_dir = state.supervisor.install_dir().to_path_buf();
-    madi_firewall::ensure_madistack_rules(&install_dir).map_err(|e| e.to_string())
+    let rules = madi_firewall::madistack_rules(&install_dir);
+
+    // Route through the elevated helper so the user sees one UAC prompt
+    // instead of a raw `0x80070005 Access Denied`. The main app stays
+    // un-elevated — only the helper inherits admin rights, and only for the
+    // lifetime of this single call.
+    let helper = firewall_helper_path().ok_or_else(|| {
+        "helper binary madistack-firewall-helper.exe not found next to the main \
+         executable — reinstall MadiStack"
+            .to_string()
+    })?;
+    madi_firewall::run_elevated_ensure(&helper, &rules).map_err(|e| match e {
+        madi_firewall::ElevatedError::UserCancelled => {
+            "A permissão foi negada no prompt do Windows. Tente novamente e \
+             clique em \"Sim\" para autorizar a criação das regras."
+                .into()
+        }
+        other => other.to_string(),
+    })
+}
+
+/// Resolve the helper binary sitting next to the main executable. In dev
+/// (`cargo tauri dev`), that's the `target/debug/` directory; in a bundled
+/// install, it's alongside `MadiStack.exe`.
+fn firewall_helper_path() -> Option<std::path::PathBuf> {
+    let me = std::env::current_exe().ok()?;
+    let dir = me.parent()?;
+    let candidate = dir.join("madistack-firewall-helper.exe");
+    candidate.is_file().then_some(candidate)
 }
 
 #[tauri::command]

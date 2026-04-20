@@ -86,6 +86,10 @@ export interface PortOccupier {
 export interface PortInspection {
   free: boolean;
   occupier: PortOccupier | null;
+  /// True when the occupier is a MadiStack-managed service (our own nginx,
+  /// php-cgi, mysqld running). The UI should treat this as informational,
+  /// not as a conflict.
+  is_self: boolean;
 }
 
 export const ipc = {
@@ -156,6 +160,9 @@ export interface UpdateStatusDto {
   current: string | null;
   available: string;
   update_available: boolean;
+  /// True when the component's signature binary exists on disk. Lets the UI
+  /// distinguish "instalado sem versão registrada" from "não instalado".
+  installed_on_disk: boolean;
 }
 
 export type UpdatePhase =

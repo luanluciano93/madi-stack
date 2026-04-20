@@ -9,6 +9,7 @@ members = [
     "crates/state-store",
     "crates/services",
     "crates/firewall",
+    "crates/firewall-helper",
     "crates/updater",
     "crates/logs",
     "crates/cli",
@@ -85,6 +86,7 @@ windows = { version = "0.58", features = [
     "Win32_NetworkManagement_IpHelper",
     "Win32_Networking_WinSock",
     "Win32_System_Com",
+    "Win32_System_Registry",
     "Win32_UI_Shell",
 ] }
 

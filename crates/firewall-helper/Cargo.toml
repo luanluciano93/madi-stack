@@ -1,0 +1,27 @@
+[package]
+name = "madistack-firewall-helper"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Elevated helper that applies MadiStack firewall rules in a single UAC prompt."
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "madistack-firewall-helper"
+path = "src/main.rs"
+# The embedded manifest requires admin, so cargo can't execute the test
+# harness from a non-elevated shell. The helper has no unit tests — it's
+# tiny and its logic is exercised through madi-firewall's public API.
+test = false
+
+[dependencies]
+madi-firewall = { workspace = true }
+serde         = { workspace = true }
+serde_json    = { workspace = true }
+
+[build-dependencies]
+embed-resource = "3"
