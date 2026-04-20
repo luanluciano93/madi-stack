@@ -16,7 +16,7 @@
     </p>
   </header>
 
-  <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+  <div class="grid grid-cols-2 gap-3 md:grid-cols-4">
     <button
       type="button"
       class="rounded-lg border border-zinc-800 bg-zinc-900 p-4 text-left transition hover:border-zinc-700 hover:bg-zinc-800"

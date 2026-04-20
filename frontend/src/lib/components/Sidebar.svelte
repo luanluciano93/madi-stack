@@ -22,9 +22,9 @@
 </script>
 
 <aside
-  class="flex w-56 shrink-0 flex-col border-r border-zinc-800 bg-zinc-900/60 py-4"
+  class="flex w-14 shrink-0 flex-col border-r border-zinc-800 bg-zinc-900/60 py-4 sm:w-56"
 >
-  <div class="px-5 pb-4">
+  <div class="hidden px-5 pb-4 sm:block">
     <h1 class="text-xl font-bold tracking-tight">MadiStack</h1>
     <p class="text-xs text-zinc-500">v0.1.0 — dev</p>
   </div>
@@ -33,13 +33,14 @@
     {#each tabs as tab}
       <button
         type="button"
+        title={tab.label}
         class="flex items-center gap-3 rounded-md px-3 py-2 text-left text-sm transition-colors
                hover:bg-zinc-800
                {active === tab.id ? 'bg-zinc-800 text-white' : 'text-zinc-400'}"
         onclick={() => (active = tab.id)}
       >
-        <span class="w-4 text-center text-zinc-500">{tab.icon}</span>
-        {tab.label}
+        <span class="w-4 shrink-0 text-center text-zinc-500">{tab.icon}</span>
+        <span class="hidden sm:inline">{tab.label}</span>
       </button>
     {/each}
   </nav>
