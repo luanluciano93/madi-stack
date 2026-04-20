@@ -24,4 +24,10 @@ thiserror  = { workspace = true }
 tracing    = { workspace = true }
 
 [dev-dependencies]
-tokio = { workspace = true }
+tokio      = { workspace = true }
+tokio-util = { workspace = true }
+wiremock   = { workspace = true }
+tempfile   = { workspace = true }
+reqwest    = { workspace = true }
+sha2       = { workspace = true }
+hex        = { workspace = true }

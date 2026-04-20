@@ -17,7 +17,7 @@
 
 use std::io;
 use std::mem;
-use std::os::windows::io::AsRawHandle;
+use std::os::windows::io::{AsRawHandle, RawHandle};
 use std::process::Child;
 
 use windows::core::PCWSTR;
@@ -65,9 +65,22 @@ impl Job {
     /// Holds no reference to `child` — the caller keeps ownership and can
     /// still `wait`/`kill` normally.
     pub fn assign(&self, child: &Child) -> io::Result<()> {
-        let hproc = HANDLE(child.as_raw_handle().cast());
-        // SAFETY: hproc is owned by `child` and valid for its lifetime;
-        // self.0 is a live job handle owned by this struct.
+        // SAFETY: see `assign_raw`. The handle is borrowed from `child`.
+        unsafe { self.assign_raw(child.as_raw_handle()) }
+    }
+
+    /// Attach a process to the job by raw handle.
+    ///
+    /// # Safety
+    ///
+    /// `handle` must be a currently-valid process handle with
+    /// `PROCESS_SET_QUOTA | PROCESS_TERMINATE` rights (the default rights for
+    /// a handle returned by `CreateProcess`). Used to support
+    /// `tokio::process::Child`, which does not expose `AsRawHandle` directly.
+    pub unsafe fn assign_raw(&self, handle: RawHandle) -> io::Result<()> {
+        let hproc = HANDLE(handle.cast());
+        // SAFETY: caller guarantees `handle` is a live process handle; self.0
+        // is a live job handle owned by this struct.
         unsafe { AssignProcessToJobObject(self.0, hproc) }.map_err(to_io)
     }
 }

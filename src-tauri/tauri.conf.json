@@ -4,8 +4,8 @@
   "version": "0.1.0",
   "identifier": "dev.luanluciano.madistack",
   "build": {
-    "beforeDevCommand": "pnpm --dir ../frontend dev",
-    "beforeBuildCommand": "pnpm --dir ../frontend build",
+    "beforeDevCommand": { "script": "pnpm dev", "cwd": "../frontend" },
+    "beforeBuildCommand": { "script": "pnpm build", "cwd": "../frontend" },
     "devUrl": "http://localhost:1420",
     "frontendDist": "../frontend/dist"
   },

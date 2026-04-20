@@ -7,7 +7,7 @@ events {
 }
 
 http {
-    include       mime.types;
+    include       "{{ install_dir }}/bin/nginx/conf/mime.types";
     default_type  application/octet-stream;
 
     sendfile        on;
@@ -31,7 +31,7 @@ http {
             index index.php;
             location ~ \.php$ {
                 fastcgi_pass 127.0.0.1:{{ ports.php_fcgi }};
-                include fastcgi_params;
+                include "{{ install_dir }}/bin/nginx/conf/fastcgi_params";
                 fastcgi_param SCRIPT_FILENAME $request_filename;
             }
         }
@@ -39,7 +39,7 @@ http {
         location ~ \.php$ {
             fastcgi_pass 127.0.0.1:{{ ports.php_fcgi }};
             fastcgi_index index.php;
-            include fastcgi_params;
+            include "{{ install_dir }}/bin/nginx/conf/fastcgi_params";
             fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
         }
     }

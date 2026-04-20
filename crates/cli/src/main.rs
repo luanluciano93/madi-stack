@@ -5,14 +5,22 @@
 //!
 //! Usage:
 //!   madistack sources [component]     # show latest release info
-//!   madistack fetch <component>       # download + verify + extract
+//!   madistack fetch   <component>     # download + verify + extract
+//!   madistack init                    # render nginx/php/mariadb configs
+//!   madistack start   <component>     # spawn a managed service
+//!   madistack stop    <component>     # stop a managed service
+//!   madistack status  [component]     # print current service status
+//!   madistack logs    <component>     # snapshot the in-memory log buffer
 
 use std::{env, path::PathBuf, time::Instant};
 
 use anyhow::{bail, Context, Result};
+use madi_config_gen::{render_all, RenderContext, DEFAULT_PHP_EXTENSIONS};
 use madi_core::Component;
 use madi_downloader::{download_verified, extract_zip, Progress};
+use madi_services::Supervisor;
 use madi_sources::{build_client, latest};
+use madi_state_store::{load_or_default, AppState as StoredState};
 use tokio::sync::mpsc;
 use tracing_subscriber::EnvFilter;
 
@@ -29,6 +37,11 @@ async fn main() -> Result<()> {
     match args.first().map(String::as_str) {
         Some("sources") => cmd_sources(&args[1..]).await,
         Some("fetch") => cmd_fetch(&args[1..]).await,
+        Some("init") => cmd_init().await,
+        Some("start") => cmd_start(&args[1..]).await,
+        Some("stop") => cmd_stop(&args[1..]).await,
+        Some("status") => cmd_status(&args[1..]),
+        Some("logs") => cmd_logs(&args[1..]),
         Some("help" | "-h" | "--help") | None => {
             print_help();
             Ok(())
@@ -46,10 +59,32 @@ fn print_help() {
     println!("USAGE:");
     println!("    madistack sources [nginx|php|mariadb|phpmyadmin]");
     println!("    madistack fetch   <nginx|php|mariadb|phpmyadmin>");
+    println!("    madistack init");
+    println!("    madistack start   <nginx|php|mariadb>");
+    println!("    madistack stop    <nginx|php|mariadb>");
+    println!("    madistack status  [nginx|php|mariadb]");
+    println!("    madistack logs    <nginx|php|mariadb>");
     println!("    madistack help");
     println!();
     println!("`fetch` downloads the latest release into ./tmp/, verifies SHA256 when");
     println!("available, and extracts into ./bin/<component>/.");
+    println!("`init`  renders nginx.conf + php.ini + my.ini into ./config/ using");
+    println!("        the ports from ./madistack.toml (falls back to defaults).");
+}
+
+/// Resolve the install root. The CLI assumes the current working directory
+/// is the MadiStack install folder — this matches how the portable .exe runs.
+fn install_dir() -> Result<PathBuf> {
+    env::current_dir().context("cannot read current directory")
+}
+
+fn load_stored() -> Result<StoredState> {
+    let path = install_dir()?.join("madistack.toml");
+    load_or_default(&path).with_context(|| format!("reading {}", path.display()))
+}
+
+fn supervisor_with_state(state: &StoredState) -> Result<Supervisor> {
+    Ok(Supervisor::new(install_dir()?, state.ports))
 }
 
 async fn cmd_sources(args: &[String]) -> Result<()> {
@@ -205,6 +240,111 @@ fn fmt_bytes(n: u64) -> String {
     } else {
         format!("{n} B")
     }
+}
+
+async fn cmd_init() -> Result<()> {
+    let install = install_dir()?;
+    let stored = load_stored().unwrap_or_default();
+    let ports = stored.ports;
+
+    let doc_root = install.join("www");
+    tokio::fs::create_dir_all(&doc_root).await.ok();
+    // nginx needs its log dirs to exist before spawn — it won't mkdir them.
+    tokio::fs::create_dir_all(install.join("logs").join("nginx"))
+        .await
+        .ok();
+
+    // Seed a welcome page so the first hit to `/` shows something real.
+    let index = doc_root.join("index.html");
+    if !index.exists() {
+        tokio::fs::write(
+            &index,
+            "<!doctype html><html><head><meta charset=\"utf-8\"><title>MadiStack</title>\
+             </head><body style=\"font-family:sans-serif;margin:3em auto;max-width:40em\">\
+             <h1>MadiStack</h1><p>Se você está vendo isso, o nginx subiu.</p>\
+             <p>Coloque seus projetos em <code>www/</code>.</p></body></html>",
+        )
+        .await
+        .ok();
+    }
+
+    let config_dir = install.join("config");
+    let ctx = RenderContext {
+        install_dir: &install,
+        ports,
+        document_root: &doc_root,
+        php_extensions: DEFAULT_PHP_EXTENSIONS,
+    };
+    render_all(&ctx, &config_dir).context("rendering configs")?;
+
+    println!("Rendered configs into {}", config_dir.display());
+    println!("  ports http={} mariadb={} php_fcgi={} bind={}", ports.http, ports.mariadb, ports.php_fcgi, ports.bind_address);
+    Ok(())
+}
+
+fn require_component_arg(args: &[String], usage: &str) -> Result<Component> {
+    let slug = args.first().with_context(|| usage.to_string())?;
+    parse_component(slug)
+}
+
+async fn cmd_start(args: &[String]) -> Result<()> {
+    let c = require_component_arg(args, "usage: madistack start <component>")?;
+    let stored = load_stored().unwrap_or_default();
+    let sup = supervisor_with_state(&stored)?;
+    let handle = sup.start(c).await.context("starting service")?;
+    println!("{} started (pid {})", c.display_name(), handle.pid);
+    println!("note: this CLI exits immediately; the Job Object is released on exit,");
+    println!("      which kills the child. Use the GUI for long-lived supervision.");
+    Ok(())
+}
+
+async fn cmd_stop(args: &[String]) -> Result<()> {
+    let c = require_component_arg(args, "usage: madistack stop <component>")?;
+    let stored = load_stored().unwrap_or_default();
+    let sup = supervisor_with_state(&stored)?;
+    match sup.stop(c).await {
+        Ok(()) => {
+            println!("{} stopped", c.display_name());
+            Ok(())
+        }
+        Err(e) => {
+            // NotRunning is the common case after the CLI exited — report
+            // but don't bubble as a hard error.
+            println!("{}: {e}", c.display_name());
+            Ok(())
+        }
+    }
+}
+
+fn cmd_logs(args: &[String]) -> Result<()> {
+    let c = require_component_arg(args, "usage: madistack logs <component>")?;
+    let stored = load_stored().unwrap_or_default();
+    let sup = supervisor_with_state(&stored)?;
+    // Note: this CLI invocation owns a fresh Supervisor — it only sees logs
+    // from processes it started itself in this same run. Useful for
+    // debugging from `madistack start <c>; madistack logs <c>` in the
+    // same shell session; the GUI keeps its buffer across the whole
+    // lifetime of the app.
+    let snap = sup.logs(c).snapshot_since(0);
+    for line in snap {
+        println!("[{:?}] seq={} {}", line.stream, line.seq, line.text);
+    }
+    Ok(())
+}
+
+fn cmd_status(args: &[String]) -> Result<()> {
+    let stored = load_stored().unwrap_or_default();
+    let sup = supervisor_with_state(&stored)?;
+
+    let components: Vec<Component> = match args.first().map(String::as_str) {
+        None => vec![Component::Nginx, Component::Php, Component::MariaDb],
+        Some(slug) => vec![parse_component(slug)?],
+    };
+    for c in components {
+        let status = sup.status(c);
+        println!("{:<10} {:?}", c.display_name(), status);
+    }
+    Ok(())
 }
 
 fn parse_component(slug: &str) -> Result<Component> {

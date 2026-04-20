@@ -7,7 +7,6 @@
     "core:default",
     "dialog:default",
     "shell:allow-open",
-    "fs:default",
-    "log:default"
+    "fs:default"
   ]
 }

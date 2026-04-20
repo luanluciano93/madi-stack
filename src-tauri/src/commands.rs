@@ -3,7 +3,23 @@
 //! Every command returns `Result<T, String>` because Tauri serializes errors
 //! as strings on the JS side. We convert from `anyhow::Error` at the boundary.
 
-use madi_core::Component;
+use madi_core::{Component, PortConfig, ServiceStatus};
+use madi_logs::LogLine;
+use madi_state_store::{save, Prefs};
+use tauri::{AppHandle, Emitter};
+
+use crate::state::AppState;
+
+pub const STATUS_EVENT: &str = "service-status";
+/// Per-line event emitted live by the log forwarder spawned in `service_start`.
+/// Payload is a single [`LogLine`] with a `slug` field added.
+pub const LOG_EVENT: &str = "service-log";
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct ServiceStatusEvent {
+    pub slug: String,
+    pub status: ServiceStatus,
+}
 
 /// Simple health-check so the frontend can confirm the backend is alive.
 #[tauri::command]
@@ -29,8 +45,476 @@ pub fn port_available(port: u16) -> bool {
     madi_services::is_port_available(port)
 }
 
+/// Return `{ free, occupier? }`. When `free` is false, `occupier` carries
+/// the PID + process name currently bound to the port (best-effort — may be
+/// `null` if the owner is a privileged service we can't introspect).
+#[tauri::command]
+pub fn port_inspect(port: u16) -> PortInspectionDto {
+    let free = madi_services::is_port_available(port);
+    let occupier = if free {
+        None
+    } else {
+        madi_services::port_occupier(port)
+    };
+    PortInspectionDto { free, occupier }
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct PortInspectionDto {
+    pub free: bool,
+    pub occupier: Option<madi_services::PortOccupier>,
+}
+
+#[tauri::command]
+pub async fn service_start(
+    component: String,
+    state: tauri::State<'_, AppState>,
+    app: AppHandle,
+) -> Result<ServiceHandleDto, String> {
+    let c = parse_component(&component)?;
+    let sup = state.supervisor.clone();
+    let h = sup.start(c).await.map_err(|e| e.to_string())?;
+    emit_status(&app, c, sup.status(c));
+
+    // Spawn one forwarder per start: subscribe AFTER the service is up so we
+    // catch every line, then bridge each broadcast event into a Tauri event.
+    // The task self-terminates when the broadcast sender closes (stop_all on
+    // shutdown drops the LogBuffer) or on Lagged (subscriber too slow — we
+    // log and continue, GUI can re-snapshot via `service_logs`).
+    let buf = sup.logs(c);
+    let app_for_task = app.clone();
+    let slug = c.slug().to_string();
+    tokio::spawn(async move {
+        let mut rx = buf.subscribe();
+        loop {
+            match rx.recv().await {
+                Ok(line) => {
+                    let _ = app_for_task.emit(
+                        LOG_EVENT,
+                        LogLineEvent {
+                            slug: slug.clone(),
+                            line,
+                        },
+                    );
+                }
+                Err(tokio::sync::broadcast::error::RecvError::Lagged(n)) => {
+                    tracing::warn!(slug, dropped = n, "log forwarder lagged");
+                }
+                Err(tokio::sync::broadcast::error::RecvError::Closed) => break,
+            }
+        }
+    });
+
+    Ok(ServiceHandleDto {
+        slug: c.slug().into(),
+        pid: h.pid,
+    })
+}
+
+/// Snapshot of the per-component log ring buffer with `seq >= since`.
+/// Use `since: 0` to fetch all lines the buffer still holds.
+#[tauri::command]
+pub fn service_logs(
+    component: String,
+    since: u64,
+    state: tauri::State<'_, AppState>,
+) -> Result<Vec<LogLine>, String> {
+    let c = parse_component(&component)?;
+    Ok(state.supervisor.logs(c).snapshot_since(since))
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
+struct LogLineEvent {
+    slug: String,
+    line: LogLine,
+}
+
+#[tauri::command]
+pub async fn service_stop(
+    component: String,
+    state: tauri::State<'_, AppState>,
+    app: AppHandle,
+) -> Result<(), String> {
+    let c = parse_component(&component)?;
+    let sup = state.supervisor.clone();
+    let result = sup.stop(c).await.map_err(|e| e.to_string());
+    emit_status(&app, c, sup.status(c));
+    result
+}
+
+fn emit_status(app: &AppHandle, c: Component, status: ServiceStatus) {
+    let _ = app.emit(
+        STATUS_EVENT,
+        ServiceStatusEvent {
+            slug: c.slug().into(),
+            status,
+        },
+    );
+}
+
+#[tauri::command]
+pub fn service_status(
+    component: String,
+    state: tauri::State<'_, AppState>,
+) -> Result<ServiceStatus, String> {
+    let c = parse_component(&component)?;
+    Ok(state.supervisor.status(c))
+}
+
+fn parse_component(slug: &str) -> Result<Component, String> {
+    Component::all()
+        .iter()
+        .copied()
+        .find(|c| c.slug() == slug)
+        .ok_or_else(|| format!("unknown component: {slug}"))
+}
+
 #[derive(Debug, serde::Serialize)]
 pub struct ComponentInfo {
     pub slug: String,
     pub name: String,
+}
+
+#[derive(Debug, serde::Serialize)]
+pub struct ServiceHandleDto {
+    pub slug: String,
+    pub pid: u32,
+}
+
+// --- Config (ports + prefs) ------------------------------------------------
+//
+// Reads from and writes to the in-memory `stored` state, and persists to
+// `madistack.toml`. Port changes do **not** hot-reload into the supervisor —
+// the new values apply on the next stop+start of each service. The frontend
+// surfaces that caveat.
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct AppConfigDto {
+    pub ports: PortConfig,
+    pub prefs: Prefs,
+}
+
+#[tauri::command]
+pub fn get_config(state: tauri::State<'_, AppState>) -> AppConfigDto {
+    let s = state.stored.read();
+    AppConfigDto {
+        ports: s.ports,
+        prefs: s.prefs.clone(),
+    }
+}
+
+#[tauri::command]
+pub fn save_config(
+    config: AppConfigDto,
+    state: tauri::State<'_, AppState>,
+) -> Result<(), String> {
+    validate_ports(&config.ports)?;
+    let install_dir = state.supervisor.install_dir().to_path_buf();
+    {
+        let mut s = state.stored.write();
+        s.ports = config.ports;
+        s.prefs = config.prefs;
+        save(&state_file_path(), &s).map_err(|e| e.to_string())?;
+    }
+    // Push the new ports into the supervisor so `preflight_port` and the
+    // mysqld/php-cgi launch args see them on the next start. Then re-render
+    // nginx.conf / php.ini / my.ini so the on-disk config reflects the
+    // saved state — nginx reads its file, not our struct. Config rendering
+    // is best-effort: if bin/ is still empty on a fresh install the user
+    // hasn't hit the "Baixar tudo" flow yet, which is fine.
+    state.supervisor.set_ports(config.ports);
+    if let Err(e) = crate::install::render_configs(&install_dir, config.ports) {
+        tracing::warn!(error = %e, "save_config: re-render skipped");
+    }
+    Ok(())
+}
+
+fn validate_ports(p: &PortConfig) -> Result<(), String> {
+    if p.http == 0 || p.mariadb == 0 || p.php_fcgi == 0 {
+        return Err("ports must be non-zero".into());
+    }
+    if p.http == p.mariadb || p.http == p.php_fcgi || p.mariadb == p.php_fcgi {
+        return Err("ports must be distinct".into());
+    }
+    Ok(())
+}
+
+// --- Install / first-run ---------------------------------------------------
+//
+// Progress streams via the `install-progress` event (see `install.rs`). The
+// frontend subscribes once on page load and routes by `slug`.
+
+#[tauri::command]
+pub fn component_installed(
+    component: String,
+    state: tauri::State<'_, AppState>,
+) -> Result<bool, String> {
+    let c = parse_component(&component)?;
+    Ok(crate::install::is_installed(
+        state.supervisor.install_dir(),
+        c,
+    ))
+}
+
+#[tauri::command]
+pub async fn component_install(
+    component: String,
+    state: tauri::State<'_, AppState>,
+    app: AppHandle,
+) -> Result<(), String> {
+    let c = parse_component(&component)?;
+    let install_dir = state.supervisor.install_dir().to_path_buf();
+    crate::install::install_component(&app, &install_dir, c)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/// Install all three services sequentially, then phpMyAdmin, then render
+/// default configs. Serial on purpose — parallel saves wall time but makes
+/// progress UX noisy and hits the same CDNs harder.
+#[tauri::command]
+pub async fn install_all(
+    state: tauri::State<'_, AppState>,
+    app: AppHandle,
+) -> Result<(), String> {
+    let install_dir = state.supervisor.install_dir().to_path_buf();
+    for c in Component::all() {
+        crate::install::install_component(&app, &install_dir, *c)
+            .await
+            .map_err(|e| e.to_string())?;
+    }
+    let ports = state.stored.read().ports;
+    crate::install::render_configs(&install_dir, ports).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+// --- Updater ---------------------------------------------------------------
+//
+// `updater_check` is a one-shot fetch; `updater_apply` streams progress
+// through the `update-progress` event (same shape as `install-progress`).
+
+pub const UPDATE_EVENT: &str = "update-progress";
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct UpdateStatusDto {
+    pub slug: String,
+    pub current: Option<String>,
+    pub available: String,
+    pub update_available: bool,
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum UpdatePhase {
+    Downloading,
+    Verifying,
+    Extracting,
+    Done,
+    Error,
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct UpdateProgressEvent {
+    pub slug: String,
+    pub phase: UpdatePhase,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub bytes: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub total: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub message: Option<String>,
+}
+
+#[tauri::command]
+pub async fn updater_check(
+    state: tauri::State<'_, AppState>,
+) -> Result<Vec<UpdateStatusDto>, String> {
+    let installed = state.stored.read().installed.clone();
+    let client = madi_sources::build_client();
+    let statuses = madi_updater::check_all(&client, |c| installed.get(&c).cloned())
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(statuses
+        .into_iter()
+        .map(|s| UpdateStatusDto {
+            slug: s.component.slug().into(),
+            current: s.current.map(|v| v.to_string()),
+            available: s.available.to_string(),
+            update_available: s.update_available,
+        })
+        .collect())
+}
+
+#[tauri::command]
+pub async fn updater_apply(
+    component: String,
+    state: tauri::State<'_, AppState>,
+    app: AppHandle,
+) -> Result<String, String> {
+    let c = parse_component(&component)?;
+    let install_dir = state.supervisor.install_dir().to_path_buf();
+
+    // Stop the service before renaming its directory — Windows locks
+    // running exes. Best-effort: if it wasn't running, `stop` errors and we
+    // just move on.
+    let _ = state.supervisor.stop(c).await;
+
+    // Bridge downloader progress into `update-progress` events.
+    let (tx, mut rx) = tokio::sync::mpsc::channel::<madi_downloader::Progress>(64);
+    let slug_for_task = c.slug().to_string();
+    let app_for_task = app.clone();
+    let bridge = tokio::spawn(async move {
+        let mut total: Option<u64> = None;
+        while let Some(ev) = rx.recv().await {
+            let payload = match ev {
+                madi_downloader::Progress::Started { total_bytes } => {
+                    total = total_bytes;
+                    UpdateProgressEvent {
+                        slug: slug_for_task.clone(),
+                        phase: UpdatePhase::Downloading,
+                        bytes: Some(0),
+                        total: total_bytes,
+                        message: None,
+                    }
+                }
+                madi_downloader::Progress::Downloaded { bytes } => UpdateProgressEvent {
+                    slug: slug_for_task.clone(),
+                    phase: UpdatePhase::Downloading,
+                    bytes: Some(bytes),
+                    total,
+                    message: None,
+                },
+                madi_downloader::Progress::Verifying => UpdateProgressEvent {
+                    slug: slug_for_task.clone(),
+                    phase: UpdatePhase::Verifying,
+                    bytes: None,
+                    total: None,
+                    message: None,
+                },
+                madi_downloader::Progress::Extracting => UpdateProgressEvent {
+                    slug: slug_for_task.clone(),
+                    phase: UpdatePhase::Extracting,
+                    bytes: None,
+                    total: None,
+                    message: None,
+                },
+                madi_downloader::Progress::Done => continue,
+            };
+            let _ = app_for_task.emit(UPDATE_EVENT, &payload);
+        }
+    });
+
+    let client = madi_sources::build_client();
+    let apply_res =
+        madi_updater::apply(&client, &install_dir, c, Some(tx.clone()), None, None).await;
+    drop(tx);
+    let _ = bridge.await;
+
+    match apply_res {
+        Ok(new_version) => {
+            // Persist the new version so a later `updater_check` shows it as
+            // current. Errors here are non-fatal: the binary is already swapped.
+            {
+                let mut s = state.stored.write();
+                s.installed.insert(c, new_version.clone());
+                if let Err(e) = madi_state_store::save(&state_file_path(), &s) {
+                    tracing::warn!(error = %e, "updater: failed to persist version");
+                }
+            }
+            let _ = app.emit(
+                UPDATE_EVENT,
+                UpdateProgressEvent {
+                    slug: c.slug().into(),
+                    phase: UpdatePhase::Done,
+                    bytes: None,
+                    total: None,
+                    message: Some(format!("v{new_version}")),
+                },
+            );
+            Ok(new_version.to_string())
+        }
+        Err(e) => {
+            let msg = e.to_string();
+            let _ = app.emit(
+                UPDATE_EVENT,
+                UpdateProgressEvent {
+                    slug: c.slug().into(),
+                    phase: UpdatePhase::Error,
+                    bytes: None,
+                    total: None,
+                    message: Some(msg.clone()),
+                },
+            );
+            Err(msg)
+        }
+    }
+}
+
+#[tauri::command]
+pub async fn updater_rollback(
+    component: String,
+    state: tauri::State<'_, AppState>,
+) -> Result<(), String> {
+    let c = parse_component(&component)?;
+    let install_dir = state.supervisor.install_dir().to_path_buf();
+    let _ = state.supervisor.stop(c).await;
+    madi_updater::rollback(&install_dir, c)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+// --- Firewall --------------------------------------------------------------
+//
+// All three rules (nginx, mariadb, php-cgi) are pushed in a single COM
+// session so UAC (if the process isn't already elevated) prompts at most
+// once. The frontend surfaces a "Recriar regras de firewall" button in
+// Configurações that hits `firewall_ensure_rules`; `firewall_rules_status`
+// feeds the badge.
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct FirewallRulesStatus {
+    pub nginx: bool,
+    pub mariadb: bool,
+    pub php_fcgi: bool,
+}
+
+const FIREWALL_RULE_NGINX: &str = "MadiStack — Nginx";
+const FIREWALL_RULE_MARIADB: &str = "MadiStack — MariaDB";
+const FIREWALL_RULE_PHP: &str = "MadiStack — PHP FastCGI";
+
+#[tauri::command]
+pub fn firewall_ensure_rules(state: tauri::State<'_, AppState>) -> Result<(), String> {
+    let install_dir = state.supervisor.install_dir().to_path_buf();
+    madi_firewall::ensure_madistack_rules(&install_dir).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn firewall_remove_rules() -> Result<(), String> {
+    for name in [FIREWALL_RULE_NGINX, FIREWALL_RULE_MARIADB, FIREWALL_RULE_PHP] {
+        madi_firewall::remove_rule(name).map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub fn firewall_rules_status() -> FirewallRulesStatus {
+    // A COM failure on one probe shouldn't blank the whole view — report each
+    // rule independently, treating probe errors as "absent".
+    FirewallRulesStatus {
+        nginx: madi_firewall::rule_exists(FIREWALL_RULE_NGINX).unwrap_or(false),
+        mariadb: madi_firewall::rule_exists(FIREWALL_RULE_MARIADB).unwrap_or(false),
+        php_fcgi: madi_firewall::rule_exists(FIREWALL_RULE_PHP).unwrap_or(false),
+    }
+}
+
+/// Mirror of the logic in [`crate::state::AppState::new`] — keeps the
+/// portable rule that the state file lives next to the `.exe`. Duplicated
+/// rather than exposed so the Tauri command doesn't pull `state.rs` into
+/// its dependency graph.
+fn state_file_path() -> std::path::PathBuf {
+    std::env::current_exe()
+        .ok()
+        .and_then(|p| p.parent().map(std::path::Path::to_path_buf))
+        .unwrap_or_else(|| std::path::PathBuf::from("."))
+        .join("madistack.toml")
 }

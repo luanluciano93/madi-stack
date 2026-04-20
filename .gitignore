@@ -44,8 +44,11 @@ pnpm-debug.log*
 /www/
 /logs/
 /tmp/
+/config/
 /madistack.toml
 /madistack.json
+/madistack-secrets.toml
+/madistack-secrets.toml.tmp
 
 # --- Binários de build / distribuição ---
 *.exe

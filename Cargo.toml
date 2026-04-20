@@ -65,10 +65,15 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 # Utilities
 parking_lot = "0.12"
 once_cell   = "1"
+rand        = "0.8"
 sysinfo     = "0.32"
 notify      = "7"
 directories = "5"
 bytes       = "1"
+
+# Test-only
+wiremock    = "0.6"
+tempfile    = "3"
 
 # Windows
 windows = { version = "0.58", features = [
@@ -77,6 +82,8 @@ windows = { version = "0.58", features = [
     "Win32_System_JobObjects",
     "Win32_Security",
     "Win32_NetworkManagement_WindowsFirewall",
+    "Win32_NetworkManagement_IpHelper",
+    "Win32_Networking_WinSock",
     "Win32_System_Com",
     "Win32_UI_Shell",
 ] }

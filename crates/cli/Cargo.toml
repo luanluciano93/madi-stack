@@ -11,13 +11,16 @@ description = "Command-line harness for the MadiStack internal crates."
 workspace = true
 
 [[bin]]
-name = "madistack"
+name = "madistack-cli"
 path = "src/main.rs"
 
 [dependencies]
-madi-core       = { workspace = true }
-madi-sources    = { workspace = true }
-madi-downloader = { workspace = true }
+madi-core        = { workspace = true }
+madi-sources     = { workspace = true }
+madi-downloader  = { workspace = true }
+madi-config-gen  = { workspace = true }
+madi-services    = { workspace = true }
+madi-state-store = { workspace = true }
 
 tokio              = { workspace = true }
 anyhow             = { workspace = true }

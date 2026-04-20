@@ -4,7 +4,7 @@ use std::{fs, io, path::Path};
 
 use zip::ZipArchive;
 
-use crate::{find_common_top_prefix, safe_join, DownloadError, DownloadResult};
+use crate::{find_common_top_prefix, safe_join, DownloadResult};
 
 pub fn extract_zip_sync(zip_path: &Path, target_dir: &Path) -> DownloadResult<()> {
     let file = fs::File::open(zip_path)?;
@@ -60,7 +60,6 @@ fn extract_one(
 
     // On Windows, the drop of the std::fs::File flushes via CloseHandle.
     drop(out);
-    let _ = DownloadError::Io;
     Ok(())
 }
 
@@ -71,6 +70,7 @@ mod tests {
     use zip::{write::SimpleFileOptions, CompressionMethod, ZipWriter};
 
     use super::*;
+    use crate::DownloadError;
 
     /// Build an in-memory zip with the given entries (path, content pairs).
     /// Directory entries use an empty `contents` and a trailing `/` in path.
