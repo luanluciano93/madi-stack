@@ -8,7 +8,8 @@ MadiStack reúne Nginx, MariaDB, PHP e phpMyAdmin em uma GUI portátil — é s�
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Windows%2010%2B-blue.svg)](#)
-[![Built with Wails](https://img.shields.io/badge/Built%20with-Wails-ff4d4d.svg)](https://wails.io)
+[![Built with Rust](https://img.shields.io/badge/Built%20with-Rust-dea584.svg)](https://www.rust-lang.org/)
+[![Built with Tauri](https://img.shields.io/badge/Built%20with-Tauri-24C8DB.svg)](https://tauri.app/)
 [![GitHub release](https://img.shields.io/github/v/release/luanluciano93/MadiStack?include_prereleases)](https://github.com/luanluciano93/MadiStack/releases)
 
 [Download](#-download) · [Funcionalidades](#-funcionalidades) · [Início Rápido](#-início-rápido) · [Screenshots](#-screenshots) · [FAQ](#-faq)
@@ -89,16 +90,20 @@ Pegue a versão mais recente na [**página de Releases**](https://github.com/lua
 
 ## 🏗 Tech Stack
 
-- **Backend:** [Go](https://go.dev/) + [Wails v2](https://wails.io/)
-- **Frontend:** [Svelte](https://svelte.dev/) + TypeScript
-- **Build:** GitHub Actions com releases automatizadas
+- **Core:** [Rust](https://www.rust-lang.org/) 1.75+ com [Tokio](https://tokio.rs/) async runtime
+- **GUI:** [Tauri v2](https://tauri.app/) (WebView2 nativo do Windows)
+- **Frontend:** [Svelte 5](https://svelte.dev/) + TypeScript + [TailwindCSS](https://tailwindcss.com/)
+- **Build & Release:** GitHub Actions + `tauri-action`
+
+**Por que Rust + Tauri?** Binário final ~8 MB, RAM idle < 70 MB, cold start < 250 ms, e segurança de memória em tempo de compilação. Sem runtime pesado, sem Electron, sem surpresas.
 
 ## 🛠 Compilando do Código-Fonte
 
 ### Pré-requisitos
-- [Go](https://go.dev/) 1.22+
-- [Node.js](https://nodejs.org/) 20+
-- [Wails CLI](https://wails.io/docs/gettingstarted/installation): `go install github.com/wailsapp/wails/v2/cmd/wails@latest`
+- [Rust](https://rustup.rs/) 1.75+ (toolchain `stable-x86_64-pc-windows-msvc`)
+- [Node.js](https://nodejs.org/) 20+ e [pnpm](https://pnpm.io/) 9+
+- [WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/) (já presente no Windows 11)
+- Microsoft C++ Build Tools (pacote "Desktop development with C++" do Visual Studio 2022)
 
 ### Build
 
@@ -107,17 +112,21 @@ Pegue a versão mais recente na [**página de Releases**](https://github.com/lua
 git clone https://github.com/luanluciano93/MadiStack.git
 cd MadiStack
 
-# Instale as dependências do frontend
-cd frontend && npm install && cd ..
+# Instale o CLI do Tauri (uma vez por máquina)
+cargo install tauri-cli --version "^2.0" --locked
 
-# Rode em modo de desenvolvimento (com hot reload)
-wails dev
+# Instale as dependências do frontend
+cd frontend && pnpm install && cd ..
+
+# Rode em modo de desenvolvimento (hot reload Rust + Svelte)
+cargo tauri dev
 
 # Gere o binário de produção
-wails build
+cargo tauri build
 ```
 
-Binário gerado em: `build/bin/MadiStack.exe`
+Binário gerado em: `src-tauri/target/release/MadiStack.exe`
+Installer NSIS (opcional): `src-tauri/target/release/bundle/nsis/`
 
 ## 🤝 Contribuindo
 
