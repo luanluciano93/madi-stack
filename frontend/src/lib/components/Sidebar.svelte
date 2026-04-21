@@ -7,6 +7,7 @@
       | 'nginx'
       | 'mariadb'
       | 'php'
+      | 'sites'
       | 'configuracoes'
       | 'atualizacoes'
       | 'sobre';
@@ -17,6 +18,7 @@
     { id: 'nginx', label: 'Nginx', icon: '◐' },
     { id: 'mariadb', label: 'MariaDB', icon: '◑' },
     { id: 'php', label: 'PHP', icon: '◉' },
+    { id: 'sites', label: 'Sites', icon: '◇' },
     { id: 'configuracoes', label: 'Configurações', icon: '⚙' },
     { id: 'atualizacoes', label: 'Atualizações', icon: '↻' },
     { id: 'sobre', label: 'Sobre', icon: 'ⓘ' },

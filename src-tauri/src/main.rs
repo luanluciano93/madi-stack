@@ -38,17 +38,25 @@ fn main() {
             let handle = app.handle().clone();
             tauri::async_runtime::spawn(status_watcher(handle));
 
+            let app_state = app.state::<state::AppState>();
+            let install_dir = app_state.supervisor.install_dir().to_path_buf();
+            let ports = app_state.stored.read().ports;
+
             // Sweep `.old-<ts>/` dirs left by swaps that were killed mid-cleanup.
-            let install_dir = app
-                .state::<state::AppState>()
-                .supervisor
-                .install_dir()
-                .to_path_buf();
+            let install_dir_gc = install_dir.clone();
             tauri::async_runtime::spawn(async move {
-                if let Err(e) = madi_updater::gc_retired(&install_dir).await {
+                if let Err(e) = madi_updater::gc_retired(&install_dir_gc).await {
                     tracing::warn!(error = %e, "boot gc_retired failed");
                 }
             });
+
+            // Re-render on-disk configs from the embedded templates. Keeps
+            // nginx.conf / php.ini / my.ini / pma config in sync whenever
+            // we ship a template change — user has no canonical state to
+            // preserve, templates are source of truth.
+            if let Err(e) = commands::render_configs_at_boot(&install_dir, ports) {
+                tracing::warn!(error = %e, "boot render_configs failed");
+            }
             Ok(())
         })
         .on_window_event(|window, event| {
@@ -82,6 +90,9 @@ fn main() {
             commands::updater_check,
             commands::updater_apply,
             commands::updater_rollback,
+            commands::vhost_list,
+            commands::vhost_enable,
+            commands::vhost_disable,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

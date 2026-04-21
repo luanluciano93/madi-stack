@@ -6,6 +6,7 @@
   import PHP from './routes/PHP.svelte';
   import Configuracoes from './routes/Configuracoes.svelte';
   import Atualizacoes from './routes/Atualizacoes.svelte';
+  import Sites from './routes/Sites.svelte';
   import Sobre from './routes/Sobre.svelte';
 
   type Route =
@@ -13,6 +14,7 @@
     | 'nginx'
     | 'mariadb'
     | 'php'
+    | 'sites'
     | 'configuracoes'
     | 'atualizacoes'
     | 'sobre';
@@ -32,6 +34,8 @@
       <MariaDB />
     {:else if active === 'php'}
       <PHP />
+    {:else if active === 'sites'}
+      <Sites />
     {:else if active === 'configuracoes'}
       <Configuracoes />
     {:else if active === 'atualizacoes'}

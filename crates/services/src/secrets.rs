@@ -39,6 +39,12 @@ pub struct Secrets {
     /// Empty string means "no password set" (legacy / pre-secrets installs).
     #[serde(default)]
     pub mariadb_root_password: String,
+
+    /// 32-char random used as phpMyAdmin's `blowfish_secret` for cookie auth
+    /// encryption. Rotated only if the user deletes `madistack-secrets.toml` —
+    /// regenerating invalidates anyone's active pma login.
+    #[serde(default)]
+    pub pma_blowfish_secret: String,
 }
 
 #[must_use]
@@ -71,6 +77,13 @@ pub fn generate_password() -> String {
     Alphanumeric.sample_string(&mut rand::thread_rng(), 24)
 }
 
+/// 32-char alphanumeric secret for phpMyAdmin cookie encryption. 32 chars is
+/// the minimum pma complains about on the config check page.
+#[must_use]
+pub fn generate_blowfish_secret() -> String {
+    Alphanumeric.sample_string(&mut rand::thread_rng(), 32)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -80,6 +93,7 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let s = Secrets {
             mariadb_root_password: "abcDEF123".into(),
+            pma_blowfish_secret: "secret32charsXXXXXXXXXXXXXXXXXXX".into(),
         };
         save(dir.path(), &s).unwrap();
         let loaded = load(dir.path()).unwrap().unwrap();

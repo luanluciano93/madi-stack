@@ -3,10 +3,10 @@
   <assemblyIdentity
       version="1.0.0.0"
       processorArchitecture="*"
-      name="dev.luanluciano.madistack.firewall-helper"
+      name="dev.luanluciano.madistack.system-helper"
       type="win32"
   />
-  <description>MadiStack firewall helper (elevated)</description>
+  <description>MadiStack system helper (elevated)</description>
   <trustInfo xmlns="urn:schemas-microsoft-com:asm.v3">
     <security>
       <requestedPrivileges>

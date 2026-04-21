@@ -13,7 +13,9 @@
 
 pub mod elevated;
 
-pub use elevated::{run_elevated_ensure, ElevatedError, ElevatedResult};
+pub use elevated::{
+    run_elevated_ensure, run_elevated_hosts_edit, ElevatedError, ElevatedResult, HostEntry,
+};
 
 use std::path::{Path, PathBuf};
 

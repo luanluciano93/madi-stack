@@ -121,7 +121,16 @@ export const ipc = {
     invoke<string>('updater_apply', { component }),
   updaterRollback: (component: ComponentSlug) =>
     invoke<void>('updater_rollback', { component }),
+  vhostList: () => invoke<VhostDto[]>('vhost_list'),
+  vhostEnable: (name: string) => invoke<void>('vhost_enable', { name }),
+  vhostDisable: (name: string) => invoke<void>('vhost_disable', { name }),
 };
+
+export interface VhostDto {
+  name: string;
+  hostname: string;
+  enabled: boolean;
+}
 
 export interface FirewallRulesStatus {
   nginx: boolean;

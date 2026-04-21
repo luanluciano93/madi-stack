@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import type { UnlistenFn } from '@tauri-apps/api/event';
+  import { open as shellOpen } from '@tauri-apps/plugin-shell';
   import StatusLed from '$lib/components/StatusLed.svelte';
   import {
     ipc,
@@ -32,8 +33,13 @@
   let reply = $state('');
   let installingAll = $state(false);
   let installError = $state<string | null>(null);
+  let httpPort = $state(80);
   let unlistenStatus: UnlistenFn | null = null;
   let unlistenInstall: UnlistenFn | null = null;
+
+  function openPhpMyAdmin() {
+    void shellOpen(`http://localhost:${httpPort}/phpmyadmin/`);
+  }
 
   function applyStatus(slug: ComponentSlug, status: ServiceStatus) {
     const i = rows.findIndex((r) => r.info.slug === slug);
@@ -171,6 +177,12 @@
     }));
     await hydrateInitialStatus();
     await refreshInstalled();
+    try {
+      const cfg = await ipc.getConfig();
+      httpPort = cfg.ports.http;
+    } catch {
+      // keep default — the "Abrir" button falls back to :80
+    }
     unlistenStatus = await onServiceStatus((evt) => applyStatus(evt.slug, evt.status));
     unlistenInstall = await onInstallProgress((evt) =>
       applyInstallEvent(evt.slug, {
@@ -251,7 +263,16 @@
             >
               {inFlight ? 'Instalando…' : 'Instalar'}
             </button>
-          {:else if !isPma}
+          {:else if isPma}
+            <button
+              type="button"
+              onclick={openPhpMyAdmin}
+              class="rounded-md bg-brand-600 px-3 py-1.5 text-sm text-white hover:bg-brand-500"
+              title={`Abrir http://localhost:${httpPort}/phpmyadmin/ no navegador padrão`}
+            >
+              Abrir
+            </button>
+          {:else}
             <button
               type="button"
               disabled={row.busy || row.status === 'running'}

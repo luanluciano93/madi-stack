@@ -166,6 +166,18 @@ pub async fn install_component(
     // Best-effort: clean the downloaded archive. Failure is non-fatal.
     let _ = tokio::fs::remove_file(&zip_path).await;
 
+    // phpMyAdmin ships without a config.inc.php — we need to drop one in
+    // pointing at the right MariaDB port and with a stable blowfish secret
+    // so cookie logins survive the user tweaking settings later.
+    if component == Component::PhpMyAdmin {
+        let ports = app
+            .try_state::<AppState>()
+            .map_or_else(PortConfig::default, |s| s.stored.read().ports);
+        if let Err(e) = ensure_pma_config(install_dir, ports) {
+            tracing::warn!(error = %e, "install: failed to render pma config");
+        }
+    }
+
     // Record the installed version so the updater has a baseline to diff
     // against. Saves inline under the shared state lock — failure here is
     // non-fatal: the binary is on disk regardless of whether we persisted.
@@ -212,6 +224,30 @@ pub fn render_configs(install_dir: &Path, ports: PortConfig) -> anyhow::Result<(
         php_extensions: DEFAULT_PHP_EXTENSIONS,
     };
     render_all(&ctx, &config_dir)?;
+    // Skip pma if it isn't extracted yet — `render_configs` runs on every
+    // `save_config`, and pma may legitimately not be installed.
+    if install_dir.join("bin").join("phpmyadmin").join("index.php").is_file() {
+        ensure_pma_config(install_dir, ports)?;
+    }
+    Ok(())
+}
+
+/// Ensure `bin/phpmyadmin/config.inc.php` exists and matches the current
+/// `ports`. Generates a fresh blowfish secret the first time and persists
+/// it so subsequent calls reuse the same one — otherwise every port change
+/// would log out existing pma sessions.
+fn ensure_pma_config(install_dir: &Path, ports: PortConfig) -> anyhow::Result<()> {
+    let mut secrets = madi_services::secrets::load(install_dir)?.unwrap_or_default();
+    if secrets.pma_blowfish_secret.is_empty() {
+        secrets.pma_blowfish_secret = madi_services::secrets::generate_blowfish_secret();
+        madi_services::secrets::save(install_dir, &secrets)?;
+    }
+
+    let pma_dir = install_dir.join("bin").join("phpmyadmin");
+    let conf_out = pma_dir.join("config.inc.php");
+    let tmp_dir = pma_dir.join("tmp");
+
+    madi_config_gen::render_pma_config(ports, &secrets.pma_blowfish_secret, &tmp_dir, &conf_out)?;
     Ok(())
 }
 

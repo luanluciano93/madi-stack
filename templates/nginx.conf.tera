@@ -26,14 +26,27 @@ http {
             try_files $uri $uri/ /index.php?$query_string;
         }
 
-        location /phpmyadmin {
-            alias "{{ install_dir }}/bin/phpmyadmin";
+        # Trailing slash on both sides + try_files is the canonical nginx
+        # recipe for `alias`-based subpaths. Without try_files the implicit
+        # `index index.php` triggers an internal redirect that re-walks the
+        # location table and hits the catch-all `.php$` block with the wrong
+        # document root, returning 403.
+        location /phpmyadmin/ {
+            alias "{{ install_dir }}/bin/phpmyadmin/";
             index index.php;
+            try_files $uri $uri/ /phpmyadmin/index.php?$args;
+
             location ~ \.php$ {
                 fastcgi_pass 127.0.0.1:{{ ports.php_fcgi }};
                 include "{{ install_dir }}/bin/nginx/conf/fastcgi_params";
                 fastcgi_param SCRIPT_FILENAME $request_filename;
             }
+        }
+
+        # Redirect /phpmyadmin (no slash) so the "Abrir" link in the app and
+        # any bookmarks without the slash still land correctly.
+        location = /phpmyadmin {
+            return 301 /phpmyadmin/;
         }
 
         location ~ \.php$ {

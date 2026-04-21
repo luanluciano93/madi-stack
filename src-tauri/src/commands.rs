@@ -214,7 +214,7 @@ pub fn get_config(state: tauri::State<'_, AppState>) -> AppConfigDto {
 }
 
 #[tauri::command]
-pub fn save_config(
+pub async fn save_config(
     config: AppConfigDto,
     state: tauri::State<'_, AppState>,
 ) -> Result<(), String> {
@@ -235,6 +235,12 @@ pub fn save_config(
     state.supervisor.set_ports(config.ports);
     if let Err(e) = crate::install::render_configs(&install_dir, config.ports) {
         tracing::warn!(error = %e, "save_config: re-render skipped");
+    }
+    // If nginx is already running, apply the new config live. `-s reload`
+    // is a no-op when nginx isn't up, and we log-and-continue on failure —
+    // the next start will read the rendered file anyway.
+    if let Err(e) = reload_nginx(&install_dir).await {
+        tracing::warn!(error = %e, "save_config: nginx reload failed");
     }
     Ok(())
 }
@@ -539,8 +545,8 @@ pub fn firewall_ensure_rules(state: tauri::State<'_, AppState>) -> Result<(), St
     // instead of a raw `0x80070005 Access Denied`. The main app stays
     // un-elevated — only the helper inherits admin rights, and only for the
     // lifetime of this single call.
-    let helper = firewall_helper_path().ok_or_else(|| {
-        "helper binary madistack-firewall-helper.exe not found next to the main \
+    let helper = system_helper_path().ok_or_else(|| {
+        "helper binary madistack-system-helper.exe not found next to the main \
          executable — reinstall MadiStack"
             .to_string()
     })?;
@@ -557,10 +563,10 @@ pub fn firewall_ensure_rules(state: tauri::State<'_, AppState>) -> Result<(), St
 /// Resolve the helper binary sitting next to the main executable. In dev
 /// (`cargo tauri dev`), that's the `target/debug/` directory; in a bundled
 /// install, it's alongside `MadiStack.exe`.
-fn firewall_helper_path() -> Option<std::path::PathBuf> {
+fn system_helper_path() -> Option<std::path::PathBuf> {
     let me = std::env::current_exe().ok()?;
     let dir = me.parent()?;
-    let candidate = dir.join("madistack-firewall-helper.exe");
+    let candidate = dir.join("madistack-system-helper.exe");
     candidate.is_file().then_some(candidate)
 }
 
@@ -593,4 +599,212 @@ fn state_file_path() -> std::path::PathBuf {
         .and_then(|p| p.parent().map(std::path::Path::to_path_buf))
         .unwrap_or_else(|| std::path::PathBuf::from("."))
         .join("madistack.toml")
+}
+
+// --- Virtual hosts --------------------------------------------------------
+//
+// A "site" is a subfolder under `www/`. Enabling one renders an nginx vhost
+// into `config/sites-enabled/<name>.conf`, adds `127.0.0.1 <name>.test` to
+// the system hosts file (via the elevated helper), and reloads nginx.
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct VhostDto {
+    pub name: String,
+    pub hostname: String,
+    pub enabled: bool,
+}
+
+const VHOST_TAG_PREFIX: &str = "vhost:";
+
+/// Accept only ASCII alphanumerics, hyphen and underscore so the name is
+/// safe as both a filename segment and a DNS label.
+fn validate_vhost_name(name: &str) -> Result<(), String> {
+    if name.is_empty() || name.len() > 63 {
+        return Err("nome do site deve ter entre 1 e 63 caracteres".into());
+    }
+    if !name
+        .chars()
+        .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
+    {
+        return Err(
+            "nome do site só pode conter letras, números, hífen e sublinhado".into(),
+        );
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub fn vhost_list(state: tauri::State<'_, AppState>) -> Vec<VhostDto> {
+    let install_dir = state.supervisor.install_dir();
+    let www = install_dir.join("www");
+    let sites_enabled = install_dir.join("config").join("sites-enabled");
+
+    // No www/ yet → no sites. Don't error; the UI will just show an empty
+    // state with a hint to create a folder.
+    let Ok(entries) = std::fs::read_dir(&www) else {
+        return Vec::new();
+    };
+
+    let mut out = Vec::new();
+    for entry in entries.flatten() {
+        let Ok(ft) = entry.file_type() else { continue };
+        if !ft.is_dir() {
+            continue;
+        }
+        let name_os = entry.file_name();
+        let Some(name) = name_os.to_str() else { continue };
+        // Skip dotfiles and anything with characters we wouldn't accept at
+        // enable time — keeps the list aligned with what `vhost_enable`
+        // can actually process.
+        if name.starts_with('.') || validate_vhost_name(name).is_err() {
+            continue;
+        }
+        let enabled = sites_enabled.join(format!("{name}.conf")).is_file();
+        out.push(VhostDto {
+            name: name.to_string(),
+            hostname: format!("{name}.test"),
+            enabled,
+        });
+    }
+    out.sort_by(|a, b| a.name.cmp(&b.name));
+    out
+}
+
+#[tauri::command]
+pub async fn vhost_enable(
+    name: String,
+    state: tauri::State<'_, AppState>,
+) -> Result<(), String> {
+    validate_vhost_name(&name)?;
+
+    let install_dir = state.supervisor.install_dir().to_path_buf();
+    let site_root = install_dir.join("www").join(&name);
+    if !site_root.is_dir() {
+        return Err(format!("pasta www/{name}/ não existe"));
+    }
+
+    // Render `config/sites-enabled/<name>.conf` pointing at the per-site
+    // document root. Reuses the same port/php config as the main server —
+    // different ports per vhost is a v2 feature.
+    let ports = state.stored.read().ports;
+    let php_exts = madi_config_gen::DEFAULT_PHP_EXTENSIONS;
+    let ctx = madi_config_gen::RenderContext {
+        install_dir: &install_dir,
+        ports,
+        document_root: &site_root,
+        php_extensions: php_exts,
+    };
+    let conf_path = install_dir
+        .join("config")
+        .join("sites-enabled")
+        .join(format!("{name}.conf"));
+    madi_config_gen::render_site(&ctx, &name, &conf_path).map_err(|e| e.to_string())?;
+
+    // Add the hosts-file entry via the elevated helper. Tag uniquely so we
+    // can later remove just this one without disturbing other vhosts.
+    let helper = system_helper_path()
+        .ok_or_else(|| "helper binário não encontrado — reinstale o MadiStack".to_string())?;
+    let entry = madi_firewall::HostEntry::new(
+        "127.0.0.1",
+        format!("{name}.test"),
+        format!("{VHOST_TAG_PREFIX}{name}"),
+    );
+    madi_firewall::run_elevated_hosts_edit(&helper, &[entry], &[]).map_err(|e| match e {
+        madi_firewall::ElevatedError::UserCancelled => {
+            // Roll back the generated .conf so the UI doesn't show the site
+            // as enabled when DNS won't resolve it.
+            let _ = std::fs::remove_file(&conf_path);
+            "A permissão foi negada. O site não foi ativado.".to_string()
+        }
+        other => {
+            let _ = std::fs::remove_file(&conf_path);
+            other.to_string()
+        }
+    })?;
+
+    // Ask nginx to pick up the new vhost file. Errors here are surfaced but
+    // non-fatal from the user's perspective — the next service start will
+    // load the config anyway.
+    if let Err(e) = reload_nginx(&install_dir).await {
+        tracing::warn!(site = %name, error = %e, "vhost_enable: nginx reload failed");
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn vhost_disable(
+    name: String,
+    state: tauri::State<'_, AppState>,
+) -> Result<(), String> {
+    validate_vhost_name(&name)?;
+
+    let install_dir = state.supervisor.install_dir().to_path_buf();
+    let conf_path = install_dir
+        .join("config")
+        .join("sites-enabled")
+        .join(format!("{name}.conf"));
+
+    // Remove the hosts entry first — if the user cancels UAC here we don't
+    // want to have already broken the site (the .conf is still there and
+    // nginx still knows how to serve it).
+    let helper = system_helper_path()
+        .ok_or_else(|| "helper binário não encontrado — reinstale o MadiStack".to_string())?;
+    let tag = format!("{VHOST_TAG_PREFIX}{name}");
+    madi_firewall::run_elevated_hosts_edit(&helper, &[], std::slice::from_ref(&tag)).map_err(
+        |e| match e {
+            madi_firewall::ElevatedError::UserCancelled => {
+                "A permissão foi negada. O site não foi desativado.".to_string()
+            }
+            other => other.to_string(),
+        },
+    )?;
+
+    // Best-effort removal of the conf file — if the user deleted it manually
+    // we don't want to error out after the hosts edit already succeeded.
+    let _ = std::fs::remove_file(&conf_path);
+
+    if let Err(e) = reload_nginx(&install_dir).await {
+        tracing::warn!(site = %name, error = %e, "vhost_disable: nginx reload failed");
+    }
+    Ok(())
+}
+
+/// Re-render the on-disk configs from the embedded Tera templates. Called
+/// on boot so template changes ship as bug fixes without requiring the user
+/// to click Salvar.
+pub fn render_configs_at_boot(
+    install_dir: &std::path::Path,
+    ports: PortConfig,
+) -> anyhow::Result<()> {
+    crate::install::render_configs(install_dir, ports)
+}
+
+/// Run `nginx.exe -s reload` against the running supervised nginx. If nginx
+/// is not running, this is a no-op — the next `start` will read the updated
+/// config.
+async fn reload_nginx(install_dir: &std::path::Path) -> Result<(), String> {
+    let nginx_dir = install_dir.join("bin").join("nginx");
+    let exe = nginx_dir.join("nginx.exe");
+    if !exe.is_file() {
+        return Ok(());
+    }
+    let conf = install_dir.join("config").join("nginx.conf");
+    let output = tokio::process::Command::new(&exe)
+        .arg("-p")
+        .arg(&nginx_dir)
+        .arg("-c")
+        .arg(&conf)
+        .arg("-s")
+        .arg("reload")
+        .output()
+        .await
+        .map_err(|e| format!("spawn nginx -s reload: {e}"))?;
+    if !output.status.success() {
+        return Err(format!(
+            "nginx -s reload falhou ({}): {}",
+            output.status,
+            String::from_utf8_lossy(&output.stderr)
+        ));
+    }
+    Ok(())
 }

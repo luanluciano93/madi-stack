@@ -9,7 +9,7 @@ members = [
     "crates/state-store",
     "crates/services",
     "crates/firewall",
-    "crates/firewall-helper",
+    "crates/system-helper",
     "crates/updater",
     "crates/logs",
     "crates/cli",

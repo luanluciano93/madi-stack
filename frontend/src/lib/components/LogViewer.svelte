@@ -67,6 +67,29 @@
       '.' + String(d.getMilliseconds()).padStart(3, '0');
   }
 
+  let copied = $state(false);
+
+  async function copyAll() {
+    const text = visible
+      .map((l) => `${fmtTs(l.ts_ms)}  ${l.text}`)
+      .join('\n');
+    try {
+      await navigator.clipboard.writeText(text);
+      copied = true;
+      setTimeout(() => (copied = false), 1500);
+    } catch {
+      // Clipboard blocked — fall back to selecting everything in the
+      // container so the user can Ctrl+C manually.
+      if (container) {
+        const range = document.createRange();
+        range.selectNodeContents(container);
+        const sel = window.getSelection();
+        sel?.removeAllRanges();
+        sel?.addRange(range);
+      }
+    }
+  }
+
   // Re-refresh whenever the component prop changes (e.g. user switches tab
   // and the same viewer is reused).
   $effect(() => {
@@ -110,13 +133,20 @@
       />
       auto-scroll
     </label>
-    <span class="ml-auto text-zinc-500">{visible.length} linhas</span>
+    <button
+      type="button"
+      onclick={copyAll}
+      class="ml-auto rounded border border-zinc-700 px-2 py-0.5 text-zinc-300 hover:bg-zinc-800"
+    >
+      {copied ? 'Copiado!' : 'Copiar'}
+    </button>
+    <span class="text-zinc-500">{visible.length} linhas</span>
   </div>
 
   <div
     bind:this={container}
     onscroll={handleScroll}
-    class={`overflow-y-auto rounded-md border border-zinc-800 bg-zinc-950 p-2 font-mono text-xs leading-snug ${heightClass}`}
+    class={`select-text overflow-y-auto rounded-md border border-zinc-800 bg-zinc-950 p-2 font-mono text-xs leading-snug ${heightClass}`}
   >
     {#if visible.length === 0}
       <p class="text-zinc-600">(vazio — inicie o serviço para ver logs)</p>

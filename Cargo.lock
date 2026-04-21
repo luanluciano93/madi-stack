@@ -2371,7 +2371,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "madistack-firewall-helper"
+name = "madistack-system-helper"
 version = "0.1.0"
 dependencies = [
  "embed-resource",

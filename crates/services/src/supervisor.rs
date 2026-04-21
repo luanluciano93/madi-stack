@@ -449,9 +449,11 @@ mod imp {
         // Generate + persist root password BEFORE init so a crash mid-init
         // leaves a recoverable secret on disk instead of a half-initialized
         // server with an unknown password.
-        let secrets = crate::secrets::Secrets {
-            mariadb_root_password: crate::secrets::generate_password(),
-        };
+        // Preserve any pre-existing pma secret — otherwise deleting the
+        // data dir (which is what usually triggers a rebootstrap) would
+        // invalidate active pma login cookies as a side effect.
+        let mut secrets = crate::secrets::load(install_dir)?.unwrap_or_default();
+        secrets.mariadb_root_password = crate::secrets::generate_password();
         crate::secrets::save(install_dir, &secrets)?;
         info!(
             data_dir = %data_dir.display(),

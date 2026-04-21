@@ -1,13 +1,17 @@
-//! Launch the bundled firewall helper elevated, triggering one UAC prompt.
+//! Launch the bundled system helper elevated, triggering one UAC prompt.
 //!
 //! Flow:
-//! 1. Main process writes a JSON request (rules + path where to drop the
+//! 1. Main process writes a JSON request (op + path where to drop the
 //!    response) to a temp file.
 //! 2. `ShellExecuteExW` with verb `runas` launches
-//!    `madistack-firewall-helper.exe <request.json>` — Windows shows UAC,
+//!    `madistack-system-helper.exe <request.json>` — Windows shows UAC,
 //!    the helper runs as admin.
 //! 3. We block on the returned process handle and then read the response
 //!    file to decide success/failure.
+//!
+//! The helper understands two operations, dispatched by the `op.kind` tag:
+//! `firewall_ensure` (creates inbound rules) and `hosts_edit` (adds/removes
+//! hosts-file entries owned by MadiStack).
 //!
 //! Why a helper instead of elevating the whole app: MadiStack is a long-
 //! running GUI that doesn't need admin for 99% of what it does. Asking
@@ -58,9 +62,47 @@ struct RuleSpec<'a> {
     program: &'a Path,
 }
 
+/// Entry we ask the helper to materialize in the hosts file.
+#[derive(Debug, Clone, Serialize)]
+pub struct HostEntry {
+    pub ip: String,
+    pub hostname: String,
+    /// Short identifier we own the line under — used to update/remove it
+    /// later without touching user-authored entries. Convention:
+    /// `vhost:<site-slug>`.
+    pub tag: String,
+}
+
+impl HostEntry {
+    #[must_use]
+    pub fn new(
+        ip: impl Into<String>,
+        hostname: impl Into<String>,
+        tag: impl Into<String>,
+    ) -> Self {
+        Self {
+            ip: ip.into(),
+            hostname: hostname.into(),
+            tag: tag.into(),
+        }
+    }
+}
+
+#[derive(Debug, Serialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+enum OpPayload<'a> {
+    FirewallEnsure {
+        rules: Vec<RuleSpec<'a>>,
+    },
+    HostsEdit {
+        add: &'a [HostEntry],
+        remove_tags: &'a [String],
+    },
+}
+
 #[derive(Debug, Serialize)]
 struct Request<'a> {
-    rules: Vec<RuleSpec<'a>>,
+    op: OpPayload<'a>,
     output: PathBuf,
 }
 
@@ -70,24 +112,9 @@ struct Response {
     error: Option<String>,
 }
 
-/// Launch `helper_exe` elevated with the given rules. Blocks until the helper
-/// exits. The helper must be the compiled `madistack-firewall-helper` with
-/// the `requireAdministrator` manifest — otherwise Windows won't elevate.
+/// Launch `helper_exe` elevated with the given firewall rules.
 pub fn run_elevated_ensure(helper_exe: &Path, rules: &[FirewallRule]) -> ElevatedResult<()> {
-    if !helper_exe.is_file() {
-        return Err(ElevatedError::HelperMissing(helper_exe.to_path_buf()));
-    }
-
-    // Stage request/response next to each other so debugging is easy if the
-    // helper misbehaves — both are auto-cleaned on success.
-    let tmp = std::env::temp_dir();
-    let stamp = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map_or(0, |d| d.as_nanos());
-    let req_path = tmp.join(format!("madistack-fw-req-{stamp}.json"));
-    let resp_path = tmp.join(format!("madistack-fw-resp-{stamp}.json"));
-
-    let req = Request {
+    let op = OpPayload::FirewallEnsure {
         rules: rules
             .iter()
             .map(|r| RuleSpec {
@@ -96,18 +123,47 @@ pub fn run_elevated_ensure(helper_exe: &Path, rules: &[FirewallRule]) -> Elevate
                 program: &r.program,
             })
             .collect(),
+    };
+    run_elevated_op(helper_exe, op)
+}
+
+/// Launch `helper_exe` elevated to add/update the given hosts entries and
+/// remove any entries whose tags appear in `remove_tags`. Idempotent: an
+/// `add` entry overwrites any previous line with the same tag.
+pub fn run_elevated_hosts_edit(
+    helper_exe: &Path,
+    add: &[HostEntry],
+    remove_tags: &[String],
+) -> ElevatedResult<()> {
+    let op = OpPayload::HostsEdit { add, remove_tags };
+    run_elevated_op(helper_exe, op)
+}
+
+fn run_elevated_op(helper_exe: &Path, op: OpPayload<'_>) -> ElevatedResult<()> {
+    if !helper_exe.is_file() {
+        return Err(ElevatedError::HelperMissing(helper_exe.to_path_buf()));
+    }
+
+    // Stage request/response next to each other in temp so debugging is easy
+    // if the helper misbehaves — both are auto-cleaned on success.
+    let tmp = std::env::temp_dir();
+    let stamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |d| d.as_nanos());
+    let req_path = tmp.join(format!("madistack-sys-req-{stamp}.json"));
+    let resp_path = tmp.join(format!("madistack-sys-resp-{stamp}.json"));
+
+    let req = Request {
+        op,
         output: resp_path.clone(),
     };
     std::fs::write(&req_path, serde_json::to_vec(&req)?)?;
 
     let result = imp::shell_execute_runas_and_wait(helper_exe, &req_path);
-
-    // Best-effort cleanup regardless of outcome.
     let _ = std::fs::remove_file(&req_path);
 
     let exit_code = result?;
     if exit_code != 0 {
-        // Try to surface the helper's own error message if available.
         if let Ok(bytes) = std::fs::read(&resp_path) {
             let _ = std::fs::remove_file(&resp_path);
             if let Ok(resp) = serde_json::from_slice::<Response>(&bytes) {

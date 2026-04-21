@@ -15,11 +15,14 @@ const TPL_NGINX: &str = include_str!("../../../templates/nginx.conf.tera");
 const TPL_PHP: &str = include_str!("../../../templates/php.ini.tera");
 const TPL_MY: &str = include_str!("../../../templates/my.ini.tera");
 const TPL_SITE: &str = include_str!("../../../templates/site-default.conf.tera");
+const TPL_PMA: &str =
+    include_str!("../../../templates/phpmyadmin.config.inc.php.tera");
 
 const NAME_NGINX: &str = "nginx.conf";
 const NAME_PHP: &str = "php.ini";
 const NAME_MY: &str = "my.ini";
 const NAME_SITE: &str = "site-default.conf";
+const NAME_PMA: &str = "phpmyadmin.config.inc.php";
 
 #[derive(Debug, thiserror::Error)]
 pub enum ConfigGenError {
@@ -129,6 +132,39 @@ pub fn render_site(
     write_lf(out_path, &rendered)
 }
 
+/// Render phpMyAdmin's `config.inc.php` at `out_path` (typically
+/// `bin/phpmyadmin/config.inc.php`).
+///
+/// `blowfish_secret` must be a stable 32-char string from `Secrets` —
+/// regenerating it invalidates existing pma login cookies, so callers are
+/// expected to persist it across runs.
+pub fn render_pma_config(
+    ports: PortConfig,
+    blowfish_secret: &str,
+    tmp_dir: &Path,
+    out_path: &Path,
+) -> ConfigGenResult<()> {
+    if let Some(parent) = out_path.parent() {
+        fs::create_dir_all(parent).map_err(|source| ConfigGenError::Io {
+            path: parent.to_path_buf(),
+            source,
+        })?;
+    }
+    fs::create_dir_all(tmp_dir).map_err(|source| ConfigGenError::Io {
+        path: tmp_dir.to_path_buf(),
+        source,
+    })?;
+
+    let tera = build_engine()?;
+    let mut ctx = Context::new();
+    ctx.insert("ports", &ports);
+    ctx.insert("blowfish_secret", blowfish_secret);
+    ctx.insert("tmp_dir", &path_to_posix(tmp_dir));
+    let rendered = tera.render(NAME_PMA, &ctx)?;
+    // PHP handles both line endings but we keep our normal LF policy.
+    write_lf(out_path, &rendered)
+}
+
 fn build_engine() -> ConfigGenResult<Tera> {
     let mut tera = Tera::default();
     // autoescape is an HTML concern; configs are plain text — disable globally.
@@ -138,6 +174,7 @@ fn build_engine() -> ConfigGenResult<Tera> {
         (NAME_PHP, TPL_PHP),
         (NAME_MY, TPL_MY),
         (NAME_SITE, TPL_SITE),
+        (NAME_PMA, TPL_PMA),
     ])?;
     Ok(tera)
 }

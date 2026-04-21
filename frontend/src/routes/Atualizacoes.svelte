@@ -186,7 +186,15 @@
           {:else if row.current}
             <span class="text-xs text-zinc-500">em dia</span>
           {:else if row.installed_on_disk}
-            <span class="text-xs text-amber-400" title="Reinstale para registrar a versão e habilitar auto-update.">instalado (reinstale para auto-update)</span>
+            <button
+              type="button"
+              disabled={inFlight}
+              onclick={() => apply(i)}
+              class="rounded-md border border-amber-500/60 px-3 py-1.5 text-sm text-amber-300 hover:bg-amber-500/10 disabled:opacity-40"
+              title="Baixa a versão atual e registra no MadiStack para habilitar auto-update."
+            >
+              {inFlight ? 'Sincronizando…' : 'Sincronizar versão'}
+            </button>
           {:else}
             <span class="text-xs text-zinc-500">não instalado</span>
           {/if}
