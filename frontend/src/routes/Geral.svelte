@@ -37,6 +37,28 @@
   let unlistenStatus: UnlistenFn | null = null;
   let unlistenInstall: UnlistenFn | null = null;
 
+  // First-run welcome banner. Dismissed permanently after the first install
+  // succeeds OR the user clicks the close button — persisted via
+  // localStorage so it doesn't show up on every cold start.
+  const ONBOARDING_KEY = 'madistack.onboarded';
+  let showOnboarding = $state(false);
+  function loadOnboarding() {
+    try {
+      showOnboarding = localStorage.getItem(ONBOARDING_KEY) !== '1';
+    } catch {
+      // localStorage blocked — default to showing once per session.
+      showOnboarding = true;
+    }
+  }
+  function dismissOnboarding() {
+    showOnboarding = false;
+    try {
+      localStorage.setItem(ONBOARDING_KEY, '1');
+    } catch {
+      // storage blocked — fall back to session-only dismissal.
+    }
+  }
+
   function openPhpMyAdmin() {
     void shellOpen(`http://localhost:${httpPort}/phpmyadmin/`);
   }
@@ -166,6 +188,7 @@
   }
 
   onMount(async () => {
+    loadOnboarding();
     const infos = await ipc.listComponents();
     rows = infos.map((info) => ({
       info,
@@ -217,6 +240,33 @@
       </button>
     {/if}
   </header>
+
+  {#if showOnboarding && rows.length > 0 && rows.some((r) => !r.installed)}
+    <div class="rounded-md border border-brand-500/40 bg-brand-500/10 p-4 text-sm">
+      <div class="flex items-start gap-3">
+        <span class="text-lg" aria-hidden="true">👋</span>
+        <div class="flex-1 space-y-1">
+          <div class="font-medium text-brand-400">Primeira vez por aqui?</div>
+          <p class="text-zinc-300">
+            Clique em <span class="font-medium">Baixar tudo</span> para buscar nginx, PHP, MariaDB
+            e phpMyAdmin das fontes oficiais (primeiro uso leva ~2 min). Depois, em cada linha,
+            o botão <span class="font-medium">Iniciar</span> sobe o serviço. Coloque seus sites
+            em subpastas de <code class="rounded bg-zinc-800 px-1 py-0.5 text-xs">www/</code> e
+            a aba <span class="font-medium">Sites</span> transforma cada uma em
+            <code class="rounded bg-zinc-800 px-1 py-0.5 text-xs">&lt;nome&gt;.test</code>.
+          </p>
+        </div>
+        <button
+          type="button"
+          onclick={dismissOnboarding}
+          class="text-zinc-500 hover:text-zinc-200"
+          aria-label="Dispensar"
+        >
+          ✕
+        </button>
+      </div>
+    </div>
+  {/if}
 
   {#if installError}
     <p class="text-sm text-red-400">Falha ao instalar tudo: {installError}</p>

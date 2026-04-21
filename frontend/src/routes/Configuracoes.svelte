@@ -1,11 +1,21 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { _ } from 'svelte-i18n';
+  import { setLocale, type LocaleCode } from '$lib/i18n';
   import {
     ipc,
     type AppConfigDto,
     type FirewallRulesStatus,
     type PortInspection,
   } from '$lib/ipc';
+
+  // Keep the i18n runtime locale in sync with the persisted pref. The
+  // backend still stores the language for backward-compat with callers
+  // that haven't migrated to svelte-i18n yet (e.g. dialog texts).
+  function applyLocale(value: string) {
+    const next: LocaleCode = value === 'en' ? 'en' : 'pt-BR';
+    setLocale(next);
+  }
 
   let config = $state<AppConfigDto | null>(null);
   let loading = $state(true);
@@ -225,9 +235,10 @@
         Minimizar para a bandeja ao iniciar
       </label>
       <label class="flex flex-col gap-1">
-        <span class="text-zinc-400">Idioma</span>
+        <span class="text-zinc-400">{$_('config.language')}</span>
         <select
           bind:value={config.prefs.language}
+          onchange={(e) => applyLocale(e.currentTarget.value)}
           class="w-40 rounded-md border border-zinc-800 bg-zinc-900 px-3 py-2"
         >
           <option value="pt-br">Português (BR)</option>

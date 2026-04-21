@@ -50,6 +50,11 @@ enum Operation {
         /// Tags whose lines should be removed.
         remove_tags: Vec<String>,
     },
+    /// Run `mkcert -install` to add the local CA to the Windows trust store.
+    /// Needs admin once; subsequent cert issuance doesn't require elevation.
+    MkcertInstall {
+        mkcert_exe: PathBuf,
+    },
 }
 
 #[derive(Debug, Deserialize)]
@@ -89,6 +94,7 @@ fn main() -> ExitCode {
     let outcome = match req.op {
         Operation::FirewallEnsure { rules } => apply_firewall(&rules),
         Operation::HostsEdit { add, remove_tags } => apply_hosts(&add, &remove_tags),
+        Operation::MkcertInstall { mkcert_exe } => mkcert_install(&mkcert_exe),
     };
 
     let resp = match outcome {
@@ -136,14 +142,12 @@ const HOSTS_PATH: &str = "C:\\Windows\\System32\\drivers\\etc\\hosts";
 const HOSTS_PATH: &str = "/etc/hosts";
 
 fn apply_hosts(add: &[HostEntry], remove_tags: &[String]) -> Result<(), String> {
-    let original = std::fs::read_to_string(HOSTS_PATH)
-        .map_err(|e| format!("read hosts: {e}"))?;
+    let original = std::fs::read_to_string(HOSTS_PATH).map_err(|e| format!("read hosts: {e}"))?;
 
     // Drop any line we previously owned whose tag is in `remove_tags` OR that
     // matches an `add` tag — the add branch re-inserts a single canonical
     // line below, so removing first makes the operation idempotent.
-    let add_tags: std::collections::HashSet<&str> =
-        add.iter().map(|e| e.tag.as_str()).collect();
+    let add_tags: std::collections::HashSet<&str> = add.iter().map(|e| e.tag.as_str()).collect();
     let remove_set: std::collections::HashSet<&str> =
         remove_tags.iter().map(String::as_str).collect();
 
@@ -190,6 +194,27 @@ fn apply_hosts(add: &[HostEntry], remove_tags: &[String]) -> Result<(), String> 
             .output();
     }
 
+    Ok(())
+}
+
+/// Run `mkcert.exe -install`. Needs admin to touch the Windows trust store.
+/// Stderr is forwarded in the error message so the user can see what
+/// mkcert actually complained about (permission denied, .NET runtime, etc).
+fn mkcert_install(mkcert_exe: &Path) -> Result<(), String> {
+    if !mkcert_exe.is_file() {
+        return Err(format!("mkcert não encontrado em {}", mkcert_exe.display()));
+    }
+    let output = std::process::Command::new(mkcert_exe)
+        .arg("-install")
+        .output()
+        .map_err(|e| format!("spawn mkcert: {e}"))?;
+    if !output.status.success() {
+        return Err(format!(
+            "mkcert -install falhou ({}): {}",
+            output.status,
+            String::from_utf8_lossy(&output.stderr)
+        ));
+    }
     Ok(())
 }
 

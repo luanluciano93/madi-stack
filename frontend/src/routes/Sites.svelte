@@ -26,13 +26,22 @@
     }, 4000);
   }
 
+  /// `enableWithHttps` selecting what protocol the `Ativar` button targets
+  /// for each row. Keyed by site name; default `false` (HTTP).
+  let httpsChoice = $state<Record<string, boolean>>({});
+
   async function enable(name: string) {
     busy = name;
     error = null;
     success = null;
+    const https = httpsChoice[name] ?? false;
     try {
-      await ipc.vhostEnable(name);
-      flashSuccess(`${name}.test ativado`);
+      await ipc.vhostEnable(name, https);
+      flashSuccess(
+        https
+          ? `${name}.test ativado com HTTPS`
+          : `${name}.test ativado`,
+      );
       await refresh();
     } catch (e) {
       error = String(e);
@@ -56,11 +65,12 @@
     }
   }
 
-  function openInBrowser(hostname: string) {
-    // plugin-shell routes http:// URLs to the OS default browser —
+  function openInBrowser(hostname: string, ssl: boolean) {
+    // plugin-shell routes http(s):// URLs to the OS default browser —
     // window.open inside the webview would try to navigate Tauri's own
     // WebView2 away from the app UI.
-    void shellOpen(`http://${hostname}/`);
+    const scheme = ssl ? 'https' : 'http';
+    void shellOpen(`${scheme}://${hostname}/`);
   }
 
   onMount(() => {
@@ -117,13 +127,13 @@
             <div class="font-medium">{site.name}</div>
             <div class="text-xs text-zinc-500">
               <span class="font-mono">{site.hostname}</span>
-              · {site.enabled ? 'ativo' : 'inativo'}
+              · {site.enabled ? (site.ssl ? 'ativo · HTTPS' : 'ativo') : 'inativo'}
             </div>
           </div>
           {#if site.enabled}
             <button
               type="button"
-              onclick={() => openInBrowser(site.hostname)}
+              onclick={() => openInBrowser(site.hostname, site.ssl)}
               class="rounded-md border border-zinc-700 px-3 py-1.5 text-xs text-zinc-200 hover:bg-zinc-800"
             >
               Abrir
@@ -137,6 +147,15 @@
               {busy === site.name ? '…' : 'Desativar'}
             </button>
           {:else}
+            <label class="flex items-center gap-1.5 text-xs text-zinc-400" title="Gera cert via mkcert na primeira vez (UAC uma só).">
+              <input
+                type="checkbox"
+                checked={httpsChoice[site.name] ?? false}
+                onchange={(e) => (httpsChoice[site.name] = e.currentTarget.checked)}
+                class="rounded border-zinc-700 bg-zinc-900"
+              />
+              HTTPS
+            </label>
             <button
               type="button"
               disabled={busy !== null}

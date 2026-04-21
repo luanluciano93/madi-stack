@@ -64,11 +64,7 @@ pub fn is_port_available(port: u16) -> bool {
 // would rewrite the signature to take `u16`, breaking the macro-generated
 // call sites.
 #[allow(clippy::trivially_copy_pass_by_ref)]
-fn format_port_busy(
-    component: &Component,
-    port: &u16,
-    occupier: Option<&PortOccupier>,
-) -> String {
+fn format_port_busy(component: &Component, port: &u16, occupier: Option<&PortOccupier>) -> String {
     let base = match occupier {
         Some(o) => {
             let name = o.process_name.as_deref().unwrap_or("<unknown>");

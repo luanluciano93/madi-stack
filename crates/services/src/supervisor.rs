@@ -164,10 +164,7 @@ mod imp {
                 spawn_log_pump(component, stderr, LogStream::Stderr, log_buf);
             }
 
-            info!(
-                component = component.slug(),
-                pid, "service started"
-            );
+            info!(component = component.slug(), pid, "service started");
 
             let handle = ServiceHandle {
                 component,
@@ -505,10 +502,7 @@ mod imp {
     /// - phpMyAdmin has not been extracted yet (no `sql/create_tables.sql`).
     ///   The next MariaDB start will retry once pma is downloaded.
     async fn bootstrap_phpmyadmin_db(install_dir: &Path) -> ServiceResult<()> {
-        let pma_db_dir = install_dir
-            .join("data")
-            .join("mariadb")
-            .join("phpmyadmin");
+        let pma_db_dir = install_dir.join("data").join("mariadb").join("phpmyadmin");
         if pma_db_dir.is_dir() {
             return Ok(());
         }
@@ -619,12 +613,8 @@ mod imp {
     /// stamps with the current wall clock. Some servers (mysqld with
     /// `log-error`) write their own timestamps; that's fine, the GUI just
     /// shows them inline with our stamp.
-    fn spawn_log_pump<R>(
-        component: Component,
-        reader: R,
-        stream: LogStream,
-        buf: Arc<LogBuffer>,
-    ) where
+    fn spawn_log_pump<R>(component: Component, reader: R, stream: LogStream, buf: Arc<LogBuffer>)
+    where
         R: tokio::io::AsyncRead + Unpin + Send + 'static,
     {
         tokio::spawn(async move {
@@ -704,7 +694,10 @@ mod imp {
             std::fs::write(&sql, b"-- noop\n").unwrap();
             // pma is "extracted" but mysqld.exe is absent.
             let err = bootstrap_phpmyadmin_db(dir.path()).await.unwrap_err();
-            assert!(matches!(err, ServiceError::NotInstalled(Component::MariaDb)));
+            assert!(matches!(
+                err,
+                ServiceError::NotInstalled(Component::MariaDb)
+            ));
         }
     }
 }

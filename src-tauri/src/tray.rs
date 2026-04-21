@@ -40,9 +40,11 @@ pub fn init<R: Runtime>(app: &tauri::App<R>) -> tauri::Result<()> {
 
     TrayIconBuilder::with_id("main-tray")
         .tooltip("MadiStack")
-        .icon(app.default_window_icon().cloned().ok_or_else(|| {
-            tauri::Error::AssetNotFound("default window icon not bundled".into())
-        })?)
+        .icon(
+            app.default_window_icon().cloned().ok_or_else(|| {
+                tauri::Error::AssetNotFound("default window icon not bundled".into())
+            })?,
+        )
         .menu(&menu)
         .show_menu_on_left_click(false)
         .on_menu_event(|app, event| handle_menu(app, &event))

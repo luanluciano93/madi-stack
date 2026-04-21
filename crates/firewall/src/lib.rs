@@ -14,7 +14,8 @@
 pub mod elevated;
 
 pub use elevated::{
-    run_elevated_ensure, run_elevated_hosts_edit, ElevatedError, ElevatedResult, HostEntry,
+    run_elevated_ensure, run_elevated_hosts_edit, run_elevated_mkcert_install, ElevatedError,
+    ElevatedResult, HostEntry,
 };
 
 use std::path::{Path, PathBuf};
@@ -25,9 +26,9 @@ use windows::core::BSTR;
 use windows::Win32::Foundation::VARIANT_TRUE;
 #[cfg(windows)]
 use windows::Win32::NetworkManagement::WindowsFirewall::{
-    INetFwPolicy2, INetFwRule, INetFwRules, NetFwPolicy2, NetFwRule,
-    NET_FW_ACTION_ALLOW, NET_FW_IP_PROTOCOL_TCP, NET_FW_PROFILE2_DOMAIN,
-    NET_FW_PROFILE2_PRIVATE, NET_FW_PROFILE2_PUBLIC, NET_FW_RULE_DIR_IN,
+    INetFwPolicy2, INetFwRule, INetFwRules, NetFwPolicy2, NetFwRule, NET_FW_ACTION_ALLOW,
+    NET_FW_IP_PROTOCOL_TCP, NET_FW_PROFILE2_DOMAIN, NET_FW_PROFILE2_PRIVATE,
+    NET_FW_PROFILE2_PUBLIC, NET_FW_RULE_DIR_IN,
 };
 #[cfg(windows)]
 use windows::Win32::System::Com::{
@@ -125,9 +126,7 @@ pub fn ensure_inbound_rules(rules: &[FirewallRule]) -> FirewallResult<()> {
                 rule.SetAction(NET_FW_ACTION_ALLOW)?;
                 rule.SetEnabled(VARIANT_TRUE)?;
                 rule.SetProfiles(
-                    NET_FW_PROFILE2_DOMAIN.0
-                        | NET_FW_PROFILE2_PRIVATE.0
-                        | NET_FW_PROFILE2_PUBLIC.0,
+                    NET_FW_PROFILE2_DOMAIN.0 | NET_FW_PROFILE2_PRIVATE.0 | NET_FW_PROFILE2_PUBLIC.0,
                 )?;
                 list.Add(&rule)?;
             }

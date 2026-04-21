@@ -278,7 +278,10 @@ async fn cmd_init() -> Result<()> {
     render_all(&ctx, &config_dir).context("rendering configs")?;
 
     println!("Rendered configs into {}", config_dir.display());
-    println!("  ports http={} mariadb={} php_fcgi={} bind={}", ports.http, ports.mariadb, ports.php_fcgi, ports.bind_address);
+    println!(
+        "  ports http={} mariadb={} php_fcgi={} bind={}",
+        ports.http, ports.mariadb, ports.php_fcgi, ports.bind_address
+    );
     Ok(())
 }
 

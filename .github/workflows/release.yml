@@ -31,6 +31,12 @@ jobs:
         run: pnpm install --frozen-lockfile
         working-directory: frontend
 
+      # Build the elevated helper first so src-tauri/build.rs can stage it as
+      # a sidecar (`binaries/madistack-system-helper-<triple>.exe`) for the
+      # Tauri bundler's externalBin pipeline.
+      - name: Build system-helper (release)
+        run: cargo build --release -p madistack-system-helper
+
       - name: Build & bundle
         uses: tauri-apps/tauri-action@v0
         env:
@@ -40,3 +46,4 @@ jobs:
           releaseName: 'MadiStack ${{ github.ref_name }}'
           releaseDraft: true
           prerelease: false
+          includeUpdaterJson: false

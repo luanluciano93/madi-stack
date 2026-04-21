@@ -289,10 +289,7 @@ pub async fn component_install(
 /// default configs. Serial on purpose — parallel saves wall time but makes
 /// progress UX noisy and hits the same CDNs harder.
 #[tauri::command]
-pub async fn install_all(
-    state: tauri::State<'_, AppState>,
-    app: AppHandle,
-) -> Result<(), String> {
+pub async fn install_all(state: tauri::State<'_, AppState>, app: AppHandle) -> Result<(), String> {
     let install_dir = state.supervisor.install_dir().to_path_buf();
     for c in Component::all() {
         crate::install::install_component(&app, &install_dir, *c)
@@ -380,8 +377,36 @@ pub struct UpdateProgressEvent {
 pub async fn updater_check(
     state: tauri::State<'_, AppState>,
 ) -> Result<Vec<UpdateStatusDto>, String> {
-    let installed = state.stored.read().installed.clone();
+    let mut installed = state.stored.read().installed.clone();
     let install_dir = state.supervisor.install_dir().to_path_buf();
+
+    // Backfill any missing installed versions by probing the binaries on
+    // disk. Catches installs that predate the version-tracking code and
+    // lets auto-update resume without a full reinstall. Persists so the
+    // probe only runs once per component.
+    let mut persisted = false;
+    for c in Component::all() {
+        if installed.contains_key(c) {
+            continue;
+        }
+        if !crate::install::is_installed(&install_dir, *c) {
+            continue;
+        }
+        let probed: Option<semver::Version> = crate::version_probe::probe(&install_dir, *c).await;
+        if let Some(v) = probed {
+            installed.insert(*c, v.clone());
+            let mut s = state.stored.write();
+            s.installed.insert(*c, v);
+            persisted = true;
+        }
+    }
+    if persisted {
+        let s = state.stored.read();
+        if let Err(e) = madi_state_store::save(&state_file_path(), &s) {
+            tracing::warn!(error = %e, "updater_check: failed to persist probed versions");
+        }
+    }
+
     let client = madi_sources::build_client();
     let statuses = madi_updater::check_all(&client, |c| installed.get(&c).cloned())
         .await
@@ -560,19 +585,45 @@ pub fn firewall_ensure_rules(state: tauri::State<'_, AppState>) -> Result<(), St
     })
 }
 
-/// Resolve the helper binary sitting next to the main executable. In dev
-/// (`cargo tauri dev`), that's the `target/debug/` directory; in a bundled
-/// install, it's alongside `MadiStack.exe`.
+/// Resolve the helper binary sitting next to the main executable. Tauri's
+/// `externalBin` bundler may either strip the target triple suffix or keep
+/// it depending on version, so we try both layouts before giving up.
 fn system_helper_path() -> Option<std::path::PathBuf> {
     let me = std::env::current_exe().ok()?;
     let dir = me.parent()?;
-    let candidate = dir.join("madistack-system-helper.exe");
-    candidate.is_file().then_some(candidate)
+
+    let plain = dir.join("madistack-system-helper.exe");
+    if plain.is_file() {
+        return Some(plain);
+    }
+
+    // Bundled variant: `madistack-system-helper-<triple>.exe`. Glob the dir
+    // for anything matching the prefix so we don't have to hardcode the
+    // target triple at runtime.
+    let entries = std::fs::read_dir(dir).ok()?;
+    for entry in entries.flatten() {
+        let name = entry.file_name();
+        let Some(name_str) = name.to_str() else {
+            continue;
+        };
+        if name_str.starts_with("madistack-system-helper-")
+            && std::path::Path::new(name_str)
+                .extension()
+                .is_some_and(|e| e.eq_ignore_ascii_case("exe"))
+        {
+            return Some(entry.path());
+        }
+    }
+    None
 }
 
 #[tauri::command]
 pub fn firewall_remove_rules() -> Result<(), String> {
-    for name in [FIREWALL_RULE_NGINX, FIREWALL_RULE_MARIADB, FIREWALL_RULE_PHP] {
+    for name in [
+        FIREWALL_RULE_NGINX,
+        FIREWALL_RULE_MARIADB,
+        FIREWALL_RULE_PHP,
+    ] {
         madi_firewall::remove_rule(name).map_err(|e| e.to_string())?;
     }
     Ok(())
@@ -612,6 +663,10 @@ pub struct VhostDto {
     pub name: String,
     pub hostname: String,
     pub enabled: bool,
+    /// Cert + key present under `config/certs/<name>/`. Independent from
+    /// `enabled`: a site can be disabled but keep its cert so re-enabling
+    /// with HTTPS is instant.
+    pub ssl: bool,
 }
 
 const VHOST_TAG_PREFIX: &str = "vhost:";
@@ -626,9 +681,7 @@ fn validate_vhost_name(name: &str) -> Result<(), String> {
         .chars()
         .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
     {
-        return Err(
-            "nome do site só pode conter letras, números, hífen e sublinhado".into(),
-        );
+        return Err("nome do site só pode conter letras, números, hífen e sublinhado".into());
     }
     Ok(())
 }
@@ -652,7 +705,9 @@ pub fn vhost_list(state: tauri::State<'_, AppState>) -> Vec<VhostDto> {
             continue;
         }
         let name_os = entry.file_name();
-        let Some(name) = name_os.to_str() else { continue };
+        let Some(name) = name_os.to_str() else {
+            continue;
+        };
         // Skip dotfiles and anything with characters we wouldn't accept at
         // enable time — keeps the list aligned with what `vhost_enable`
         // can actually process.
@@ -660,10 +715,17 @@ pub fn vhost_list(state: tauri::State<'_, AppState>) -> Vec<VhostDto> {
             continue;
         }
         let enabled = sites_enabled.join(format!("{name}.conf")).is_file();
+        let ssl = install_dir
+            .join("config")
+            .join("certs")
+            .join(name)
+            .join("cert.pem")
+            .is_file();
         out.push(VhostDto {
             name: name.to_string(),
             hostname: format!("{name}.test"),
             enabled,
+            ssl,
         });
     }
     out.sort_by(|a, b| a.name.cmp(&b.name));
@@ -673,6 +735,7 @@ pub fn vhost_list(state: tauri::State<'_, AppState>) -> Vec<VhostDto> {
 #[tauri::command]
 pub async fn vhost_enable(
     name: String,
+    https: bool,
     state: tauri::State<'_, AppState>,
 ) -> Result<(), String> {
     validate_vhost_name(&name)?;
@@ -682,6 +745,26 @@ pub async fn vhost_enable(
     if !site_root.is_dir() {
         return Err(format!("pasta www/{name}/ não existe"));
     }
+
+    // When the user ticks HTTPS, make sure mkcert is available and a cert
+    // exists for this hostname before writing the nginx conf — otherwise
+    // nginx fails to start with "cannot load certificate" and the user is
+    // left with a broken site.
+    let cert_dir = install_dir.join("config").join("certs").join(&name);
+    let ssl = if https {
+        ensure_mkcert_ready(&install_dir).await?;
+        if !cert_dir.join("cert.pem").is_file() {
+            crate::mkcert::issue(&install_dir, &cert_dir, &format!("{name}.test"))
+                .await
+                .map_err(|e| e.to_string())?;
+        }
+        Some(madi_config_gen::SiteSsl {
+            cert_path: &cert_dir.join("cert.pem"),
+            key_path: &cert_dir.join("key.pem"),
+        })
+    } else {
+        None
+    };
 
     // Render `config/sites-enabled/<name>.conf` pointing at the per-site
     // document root. Reuses the same port/php config as the main server —
@@ -698,7 +781,7 @@ pub async fn vhost_enable(
         .join("config")
         .join("sites-enabled")
         .join(format!("{name}.conf"));
-    madi_config_gen::render_site(&ctx, &name, &conf_path).map_err(|e| e.to_string())?;
+    madi_config_gen::render_site(&ctx, &name, ssl, &conf_path).map_err(|e| e.to_string())?;
 
     // Add the hosts-file entry via the elevated helper. Tag uniquely so we
     // can later remove just this one without disturbing other vhosts.
@@ -732,10 +815,7 @@ pub async fn vhost_enable(
 }
 
 #[tauri::command]
-pub async fn vhost_disable(
-    name: String,
-    state: tauri::State<'_, AppState>,
-) -> Result<(), String> {
+pub async fn vhost_disable(name: String, state: tauri::State<'_, AppState>) -> Result<(), String> {
     validate_vhost_name(&name)?;
 
     let install_dir = state.supervisor.install_dir().to_path_buf();
@@ -777,6 +857,47 @@ pub fn render_configs_at_boot(
     ports: PortConfig,
 ) -> anyhow::Result<()> {
     crate::install::render_configs(install_dir, ports)
+}
+
+/// Download mkcert if missing and ensure the local root CA is trusted.
+/// Idempotent — subsequent HTTPS toggles skip both steps.
+async fn ensure_mkcert_ready(install_dir: &std::path::Path) -> Result<(), String> {
+    crate::mkcert::ensure_downloaded(install_dir)
+        .await
+        .map_err(|e| format!("falha ao baixar mkcert: {e}"))?;
+
+    if !crate::mkcert::ca_installed(install_dir) {
+        let helper =
+            system_helper_path().ok_or_else(|| "helper binário não encontrado".to_string())?;
+        let exe = crate::mkcert::mkcert_exe(install_dir);
+        madi_firewall::run_elevated_mkcert_install(&helper, &exe).map_err(|e| match e {
+            madi_firewall::ElevatedError::UserCancelled => {
+                "A permissão foi negada. O HTTPS não pôde ser configurado.".to_string()
+            }
+            other => other.to_string(),
+        })?;
+        if let Err(e) = crate::mkcert::mark_ca_installed(install_dir) {
+            tracing::warn!(error = %e, "failed to persist mkcert CA marker");
+        }
+    }
+    Ok(())
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct MkcertStatusDto {
+    /// True when `bin/mkcert/mkcert.exe` is on disk.
+    pub binary_present: bool,
+    /// True when we've already run `mkcert -install` successfully.
+    pub ca_installed: bool,
+}
+
+#[tauri::command]
+pub fn mkcert_status(state: tauri::State<'_, AppState>) -> MkcertStatusDto {
+    let dir = state.supervisor.install_dir();
+    MkcertStatusDto {
+        binary_present: crate::mkcert::mkcert_exe(dir).is_file(),
+        ca_installed: crate::mkcert::ca_installed(dir),
+    }
 }
 
 /// Run `nginx.exe -s reload` against the running supervised nginx. If nginx

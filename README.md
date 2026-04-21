@@ -37,15 +37,15 @@ Cansado do **USBWebserver** travado no Apache 2.2 e em versões antigas do PHP? 
 - **phpMyAdmin** (stable mais recente) — gerenciamento de banco familiar
 
 ### Funcionalidades da GUI
-- ⚡ Start/stop/restart de cada serviço com um clique
-- 🔌 Portas configuráveis (HTTP, HTTPS, MySQL, PHP-FPM)
-- 📂 Atalhos rápidos: abrir pasta `www`, localhost, phpMyAdmin
-- 📊 Visualizador de logs em tempo real para Nginx e PHP
-- 🔧 Editor de configs integrado com syntax highlighting
-- 🌐 Suporte a múltiplos sites (virtual hosts) — rode vários projetos ao mesmo tempo
-- 🔒 HTTPS local com um clique usando certificados self-signed
-- 📢 Integração com system tray — roda discreto em segundo plano
-- 🇧🇷 Suporte completo em Português (BR) e Inglês
+- ⚡ Start/stop de cada serviço com um clique — shutdown gracioso (`nginx -s quit`, `mysqladmin shutdown`)
+- 🔌 Portas configuráveis + detecção de conflito ("porta 3306 em uso por `mysqld_usbwv8.exe` — pare o USBWebserver")
+- 📂 Atalhos: abrir phpMyAdmin no navegador padrão, abrir sites `.test`
+- 📊 Visualizador de logs em tempo real com seleção + botão copiar
+- 🌐 Virtual hosts — cada subpasta de `www/` vira `<nome>.test` com nginx + hosts + reload automáticos
+- 🔒 HTTPS local via **mkcert** embutido — uma UAC pra adicionar o CA raiz, certificados válidos pra sempre
+- 🔥 Firewall do Windows em lote (um único UAC pra nginx + mysqld + php-cgi)
+- 📢 System tray — roda discreto em segundo plano
+- 🔄 Updater inteligente — download com SHA256, retry em erro transiente, smoke test pós-swap, rollback automático se o serviço não subir
 
 ### Feito para Desenvolvedores
 - 🔄 Auto-update de todos os componentes direto das fontes oficiais
@@ -78,15 +78,18 @@ Pegue a versão mais recente na [**página de Releases**](https://github.com/lua
 
 - [x] Stack principal: Nginx + MariaDB + PHP + phpMyAdmin
 - [x] GUI com start/stop de um clique
-- [x] Configuração de portas
-- [x] Auto-updater
-- [ ] Gerenciador de virtual hosts
-- [ ] HTTPS local com integração ao mkcert
-- [ ] Troca de versão do PHP
+- [x] Configuração de portas + detecção de conflito
+- [x] Auto-updater com smoke test e rollback automático
+- [x] Gerenciador de virtual hosts (subpastas em `www/` viram `<nome>.test`)
+- [x] HTTPS local via mkcert embutido — 1 UAC e certificado válido pra sempre
+- [x] System tray + logs ao vivo com botão copiar
+- [x] Regras de Firewall do Windows via helper elevado (uma UAC só)
+- [ ] i18n completo PT-BR + EN
+- [ ] Dark mode 🌙 + tutorial na primeira execução
+- [ ] Troca de versão do PHP lado-a-lado
 - [ ] Redis e Memcached como componentes opcionais
 - [ ] Integração com Composer e WP-CLI
 - [ ] Backup/restore de bancos MariaDB
-- [ ] Dark mode 🌙
 
 ## 🏗 Tech Stack
 
@@ -125,8 +128,16 @@ cargo tauri dev
 cargo tauri build
 ```
 
-Binário gerado em: `src-tauri/target/release/MadiStack.exe`
-Installer NSIS (opcional): `src-tauri/target/release/bundle/nsis/`
+Binários gerados em `target/release/`:
+
+| Arquivo | Uso |
+|---------|-----|
+| `madistack.exe` | Binário portátil principal |
+| `madistack-system-helper.exe` | Helper elevado (UAC) — deve ficar no mesmo diretório do principal |
+| `bundle/nsis/MadiStack_*.exe` | Instalador NSIS (inclui ambos os binários) |
+| `bundle/msi/MadiStack_*.msi` | Instalador MSI |
+
+> Antes de `cargo tauri build`, rode `cargo build --release -p madistack-system-helper` para que o helper seja incluído no bundle.
 
 ## 🤝 Contribuindo
 

@@ -15,8 +15,7 @@ const TPL_NGINX: &str = include_str!("../../../templates/nginx.conf.tera");
 const TPL_PHP: &str = include_str!("../../../templates/php.ini.tera");
 const TPL_MY: &str = include_str!("../../../templates/my.ini.tera");
 const TPL_SITE: &str = include_str!("../../../templates/site-default.conf.tera");
-const TPL_PMA: &str =
-    include_str!("../../../templates/phpmyadmin.config.inc.php.tera");
+const TPL_PMA: &str = include_str!("../../../templates/phpmyadmin.config.inc.php.tera");
 
 const NAME_NGINX: &str = "nginx.conf";
 const NAME_PHP: &str = "php.ini";
@@ -110,13 +109,23 @@ pub fn render_all(ctx: &RenderContext<'_>, config_dir: &Path) -> ConfigGenResult
     Ok(())
 }
 
+/// Optional HTTPS settings for a rendered vhost. When `Some`, the template
+/// emits a 443 listener plus an HTTP→HTTPS redirect.
+#[derive(Debug, Clone)]
+pub struct SiteSsl<'a> {
+    pub cert_path: &'a Path,
+    pub key_path: &'a Path,
+}
+
 /// Render a virtual-host file for `site_name` and write it to `out_path`.
 ///
 /// Used by the sprint-3 "sites" feature. `out_path` typically lives under
-/// `<install>/config/sites-enabled/<site_name>.conf`.
+/// `<install>/config/sites-enabled/<site_name>.conf`. Pass `ssl = Some(..)`
+/// to emit the HTTPS variant (requires cert + key files).
 pub fn render_site(
     ctx: &RenderContext<'_>,
     site_name: &str,
+    ssl: Option<SiteSsl<'_>>,
     out_path: &Path,
 ) -> ConfigGenResult<()> {
     if let Some(parent) = out_path.parent() {
@@ -128,6 +137,16 @@ pub fn render_site(
     let tera = build_engine()?;
     let mut tctx = ctx.to_tera();
     tctx.insert("site_name", site_name);
+    match ssl {
+        Some(s) => {
+            tctx.insert("ssl", &true);
+            tctx.insert("ssl_cert", &path_to_posix(s.cert_path));
+            tctx.insert("ssl_key", &path_to_posix(s.key_path));
+        }
+        None => {
+            tctx.insert("ssl", &false);
+        }
+    }
     let rendered = tera.render(NAME_SITE, &tctx)?;
     write_lf(out_path, &rendered)
 }

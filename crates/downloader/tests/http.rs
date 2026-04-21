@@ -30,9 +30,16 @@ async fn downloads_and_verifies_sha256() {
     let dest = tmp.path().join("out.bin");
     let url = format!("{}/file.bin", server.uri());
 
-    download_verified(&reqwest::Client::new(), &url, &dest, Some(&digest), None, None)
-        .await
-        .expect("download should succeed");
+    download_verified(
+        &reqwest::Client::new(),
+        &url,
+        &dest,
+        Some(&digest),
+        None,
+        None,
+    )
+    .await
+    .expect("download should succeed");
 
     assert_eq!(std::fs::read(&dest).unwrap(), payload);
 }
@@ -52,9 +59,16 @@ async fn sha_mismatch_removes_partial_file() {
     let url = format!("{}/x", server.uri());
     let bogus = "0".repeat(64);
 
-    let err = download_verified(&reqwest::Client::new(), &url, &dest, Some(&bogus), None, None)
-        .await
-        .expect_err("should reject mismatched hash");
+    let err = download_verified(
+        &reqwest::Client::new(),
+        &url,
+        &dest,
+        Some(&bogus),
+        None,
+        None,
+    )
+    .await
+    .expect_err("should reject mismatched hash");
 
     // Mismatch is reported, but the partial file is kept on disk — caller
     // decides whether to delete it (policy documented in the module docs).
@@ -79,9 +93,16 @@ async fn emits_progress_events() {
     let url = format!("{}/p", server.uri());
 
     let (tx, mut rx) = tokio::sync::mpsc::channel(32);
-    download_verified(&reqwest::Client::new(), &url, &dest, Some(&digest), Some(tx), None)
-        .await
-        .unwrap();
+    download_verified(
+        &reqwest::Client::new(),
+        &url,
+        &dest,
+        Some(&digest),
+        Some(tx),
+        None,
+    )
+    .await
+    .unwrap();
 
     let mut started = false;
     let mut downloaded_max = 0u64;

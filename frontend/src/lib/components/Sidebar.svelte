@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { _ } from 'svelte-i18n';
   import logoUrl from '../../assets/logo.png';
 
   let { active = $bindable() } = $props<{
@@ -13,15 +14,17 @@
       | 'sobre';
   }>();
 
+  // Label is resolved lazily via the `$_` store so switching locale at
+  // runtime re-renders without reload. Each tab's i18n key matches its id.
   const tabs = [
-    { id: 'geral', label: 'Geral', icon: '⌂' },
-    { id: 'nginx', label: 'Nginx', icon: '◐' },
-    { id: 'mariadb', label: 'MariaDB', icon: '◑' },
-    { id: 'php', label: 'PHP', icon: '◉' },
-    { id: 'sites', label: 'Sites', icon: '◇' },
-    { id: 'configuracoes', label: 'Configurações', icon: '⚙' },
-    { id: 'atualizacoes', label: 'Atualizações', icon: '↻' },
-    { id: 'sobre', label: 'Sobre', icon: 'ⓘ' },
+    { id: 'geral', icon: '⌂' },
+    { id: 'nginx', icon: '◐' },
+    { id: 'mariadb', icon: '◑' },
+    { id: 'php', icon: '◉' },
+    { id: 'sites', icon: '◇' },
+    { id: 'configuracoes', icon: '⚙' },
+    { id: 'atualizacoes', icon: '↻' },
+    { id: 'sobre', icon: 'ⓘ' },
   ] as const;
 </script>
 
@@ -43,16 +46,17 @@
 
   <nav class="flex flex-col gap-0.5 px-2">
     {#each tabs as tab}
+      {@const label = $_(`nav.${tab.id}`)}
       <button
         type="button"
-        title={tab.label}
+        title={label}
         class="flex items-center gap-3 rounded-md px-3 py-2 text-left text-sm transition-colors
                hover:bg-zinc-800
                {active === tab.id ? 'bg-zinc-800 text-white' : 'text-zinc-400'}"
         onclick={() => (active = tab.id)}
       >
         <span class="w-4 shrink-0 text-center text-zinc-500">{tab.icon}</span>
-        <span class="hidden sm:inline">{tab.label}</span>
+        <span class="hidden sm:inline">{label}</span>
       </button>
     {/each}
   </nav>

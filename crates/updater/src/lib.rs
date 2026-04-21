@@ -76,10 +76,7 @@ pub struct UpdateStatus {
 /// the installed version. `installed(c) == None` is surfaced as
 /// `update_available = false` — the updater only operates on components that
 /// have already been installed via the first-run flow.
-pub async fn check_all<F>(
-    client: &reqwest::Client,
-    installed: F,
-) -> UpdateResult<Vec<UpdateStatus>>
+pub async fn check_all<F>(client: &reqwest::Client, installed: F) -> UpdateResult<Vec<UpdateStatus>>
 where
     F: Fn(Component) -> Option<semver::Version>,
 {

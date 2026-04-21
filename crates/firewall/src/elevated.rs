@@ -75,11 +75,7 @@ pub struct HostEntry {
 
 impl HostEntry {
     #[must_use]
-    pub fn new(
-        ip: impl Into<String>,
-        hostname: impl Into<String>,
-        tag: impl Into<String>,
-    ) -> Self {
+    pub fn new(ip: impl Into<String>, hostname: impl Into<String>, tag: impl Into<String>) -> Self {
         Self {
             ip: ip.into(),
             hostname: hostname.into(),
@@ -97,6 +93,9 @@ enum OpPayload<'a> {
     HostsEdit {
         add: &'a [HostEntry],
         remove_tags: &'a [String],
+    },
+    MkcertInstall {
+        mkcert_exe: &'a Path,
     },
 }
 
@@ -137,6 +136,13 @@ pub fn run_elevated_hosts_edit(
 ) -> ElevatedResult<()> {
     let op = OpPayload::HostsEdit { add, remove_tags };
     run_elevated_op(helper_exe, op)
+}
+
+/// Launch `helper_exe` elevated to run `mkcert.exe -install`, which adds
+/// mkcert's local CA to the Windows trust store. Needed only once per
+/// machine — subsequent per-domain cert issuance is unprivileged.
+pub fn run_elevated_mkcert_install(helper_exe: &Path, mkcert_exe: &Path) -> ElevatedResult<()> {
+    run_elevated_op(helper_exe, OpPayload::MkcertInstall { mkcert_exe })
 }
 
 fn run_elevated_op(helper_exe: &Path, op: OpPayload<'_>) -> ElevatedResult<()> {
@@ -200,9 +206,7 @@ mod imp {
     use windows::core::PCWSTR;
     use windows::Win32::Foundation::{CloseHandle, ERROR_CANCELLED, HANDLE};
     use windows::Win32::System::Threading::{GetExitCodeProcess, WaitForSingleObject, INFINITE};
-    use windows::Win32::UI::Shell::{
-        ShellExecuteExW, SEE_MASK_NOCLOSEPROCESS, SHELLEXECUTEINFOW,
-    };
+    use windows::Win32::UI::Shell::{ShellExecuteExW, SEE_MASK_NOCLOSEPROCESS, SHELLEXECUTEINFOW};
 
     use super::{ElevatedError, ElevatedResult};
 

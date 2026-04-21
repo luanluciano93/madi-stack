@@ -6,8 +6,10 @@
 
 mod commands;
 mod install;
+mod mkcert;
 mod state;
 mod tray;
+mod version_probe;
 
 use std::time::Duration;
 
@@ -93,6 +95,7 @@ fn main() {
             commands::vhost_list,
             commands::vhost_enable,
             commands::vhost_disable,
+            commands::mkcert_status,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

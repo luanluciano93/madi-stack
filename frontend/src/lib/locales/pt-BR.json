@@ -1,0 +1,90 @@
+{
+  "app": {
+    "name": "MadiStack",
+    "tagline": "Stack web portátil para Windows"
+  },
+  "nav": {
+    "geral": "Geral",
+    "nginx": "Nginx",
+    "mariadb": "MariaDB",
+    "php": "PHP",
+    "sites": "Sites",
+    "configuracoes": "Configurações",
+    "atualizacoes": "Atualizações",
+    "sobre": "Sobre"
+  },
+  "actions": {
+    "start": "Iniciar",
+    "stop": "Parar",
+    "install": "Instalar",
+    "installing": "Instalando…",
+    "save": "Salvar",
+    "saving": "Salvando…",
+    "saved": "Salvo",
+    "cancel": "Cancelar",
+    "close": "Fechar",
+    "open": "Abrir",
+    "enable": "Ativar",
+    "disable": "Desativar",
+    "refresh": "Atualizar lista",
+    "copy": "Copiar",
+    "copied": "Copiado!",
+    "check_for_updates": "Verificar tudo",
+    "update": "Atualizar",
+    "updating": "Atualizando…",
+    "rollback": "Reverter",
+    "sync_version": "Sincronizar versão"
+  },
+  "common": {
+    "loading": "Carregando…",
+    "running": "em execução",
+    "stopped": "parado",
+    "crashed": "caiu",
+    "not_installed": "não instalado",
+    "installed": "instalado",
+    "up_to_date": "em dia",
+    "unknown_version": "versão desconhecida",
+    "error": "Erro"
+  },
+  "config": {
+    "title": "Configurações",
+    "subtitle": "Ajuste portas e preferências gerais. Alterações de porta aplicam no próximo start do serviço.",
+    "port_http": "Porta HTTP",
+    "port_mariadb": "Porta MariaDB",
+    "port_php": "Porta PHP FastCGI",
+    "bind_address": "Bind address",
+    "language": "Idioma",
+    "open_browser_on_start": "Abrir navegador ao iniciar",
+    "minimize_on_start": "Minimizar para a bandeja ao iniciar",
+    "firewall_header": "Firewall do Windows",
+    "firewall_desc": "Regras inbound para nginx, MariaDB e php-cgi. Criadas em lote — um único prompt de UAC.",
+    "firewall_create": "Criar / Recriar regras",
+    "firewall_remove": "Remover",
+    "firewall_applied": "Regras aplicadas com sucesso.",
+    "firewall_removed": "Regras removidas.",
+    "port_in_use_by_self": "em uso pelo próprio MadiStack"
+  },
+  "sites": {
+    "title": "Sites",
+    "subtitle_html": "Cada subpasta de <code>www/</code> vira um site servido em <code>&lt;nome&gt;.test</code>. Ativar edita o arquivo <code>hosts</code> do Windows (pede UAC) e recarrega o nginx.",
+    "empty_html": "Nenhuma pasta em <code>www/</code> ainda. Crie uma pasta como <code>www/meusite/</code> com um <code>index.php</code> e recarregue esta página.",
+    "https_toggle": "HTTPS",
+    "https_toggle_title": "Gera cert via mkcert na primeira vez (UAC uma só).",
+    "active": "ativo",
+    "active_https": "ativo · HTTPS",
+    "inactive": "inativo"
+  },
+  "updates": {
+    "title": "Atualizações",
+    "subtitle": "Versões instaladas vs. últimas publicadas pelos projetos oficiais.",
+    "installed_label": "instalado",
+    "available_label": "disponível"
+  },
+  "geral": {
+    "title": "Geral",
+    "subtitle": "Controle e status dos serviços.",
+    "install_all": "Baixar tudo",
+    "ping_backend": "ping backend",
+    "pma_served_by_nginx": "servido pelo nginx"
+  }
+}

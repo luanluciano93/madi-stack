@@ -1,0 +1,90 @@
+{
+  "app": {
+    "name": "MadiStack",
+    "tagline": "Portable web stack for Windows"
+  },
+  "nav": {
+    "geral": "General",
+    "nginx": "Nginx",
+    "mariadb": "MariaDB",
+    "php": "PHP",
+    "sites": "Sites",
+    "configuracoes": "Settings",
+    "atualizacoes": "Updates",
+    "sobre": "About"
+  },
+  "actions": {
+    "start": "Start",
+    "stop": "Stop",
+    "install": "Install",
+    "installing": "Installing…",
+    "save": "Save",
+    "saving": "Saving…",
+    "saved": "Saved",
+    "cancel": "Cancel",
+    "close": "Close",
+    "open": "Open",
+    "enable": "Enable",
+    "disable": "Disable",
+    "refresh": "Refresh list",
+    "copy": "Copy",
+    "copied": "Copied!",
+    "check_for_updates": "Check all",
+    "update": "Update",
+    "updating": "Updating…",
+    "rollback": "Rollback",
+    "sync_version": "Sync version"
+  },
+  "common": {
+    "loading": "Loading…",
+    "running": "running",
+    "stopped": "stopped",
+    "crashed": "crashed",
+    "not_installed": "not installed",
+    "installed": "installed",
+    "up_to_date": "up to date",
+    "unknown_version": "unknown version",
+    "error": "Error"
+  },
+  "config": {
+    "title": "Settings",
+    "subtitle": "Adjust ports and general preferences. Port changes apply on next service start.",
+    "port_http": "HTTP port",
+    "port_mariadb": "MariaDB port",
+    "port_php": "PHP FastCGI port",
+    "bind_address": "Bind address",
+    "language": "Language",
+    "open_browser_on_start": "Open browser on start",
+    "minimize_on_start": "Minimize to tray on start",
+    "firewall_header": "Windows Firewall",
+    "firewall_desc": "Inbound rules for nginx, MariaDB and php-cgi. Batched into a single UAC prompt.",
+    "firewall_create": "Create / Recreate rules",
+    "firewall_remove": "Remove",
+    "firewall_applied": "Rules applied successfully.",
+    "firewall_removed": "Rules removed.",
+    "port_in_use_by_self": "in use by MadiStack itself"
+  },
+  "sites": {
+    "title": "Sites",
+    "subtitle_html": "Every subfolder of <code>www/</code> becomes a site served at <code>&lt;name&gt;.test</code>. Enabling edits the Windows <code>hosts</code> file (asks for UAC) and reloads nginx.",
+    "empty_html": "No folder in <code>www/</code> yet. Create one like <code>www/mysite/</code> with an <code>index.php</code> and refresh this page.",
+    "https_toggle": "HTTPS",
+    "https_toggle_title": "Issues cert via mkcert on first use (single UAC prompt).",
+    "active": "active",
+    "active_https": "active · HTTPS",
+    "inactive": "inactive"
+  },
+  "updates": {
+    "title": "Updates",
+    "subtitle": "Installed versions vs. latest published by upstream.",
+    "installed_label": "installed",
+    "available_label": "available"
+  },
+  "geral": {
+    "title": "General",
+    "subtitle": "Service status and controls.",
+    "install_all": "Download all",
+    "ping_backend": "ping backend",
+    "pma_served_by_nginx": "served by nginx"
+  }
+}

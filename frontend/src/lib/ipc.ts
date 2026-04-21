@@ -122,14 +122,22 @@ export const ipc = {
   updaterRollback: (component: ComponentSlug) =>
     invoke<void>('updater_rollback', { component }),
   vhostList: () => invoke<VhostDto[]>('vhost_list'),
-  vhostEnable: (name: string) => invoke<void>('vhost_enable', { name }),
+  vhostEnable: (name: string, https: boolean) =>
+    invoke<void>('vhost_enable', { name, https }),
   vhostDisable: (name: string) => invoke<void>('vhost_disable', { name }),
+  mkcertStatus: () => invoke<MkcertStatusDto>('mkcert_status'),
 };
 
 export interface VhostDto {
   name: string;
   hostname: string;
   enabled: boolean;
+  ssl: boolean;
+}
+
+export interface MkcertStatusDto {
+  binary_present: boolean;
+  ca_installed: boolean;
 }
 
 export interface FirewallRulesStatus {

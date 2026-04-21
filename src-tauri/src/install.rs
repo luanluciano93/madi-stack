@@ -226,7 +226,12 @@ pub fn render_configs(install_dir: &Path, ports: PortConfig) -> anyhow::Result<(
     render_all(&ctx, &config_dir)?;
     // Skip pma if it isn't extracted yet — `render_configs` runs on every
     // `save_config`, and pma may legitimately not be installed.
-    if install_dir.join("bin").join("phpmyadmin").join("index.php").is_file() {
+    if install_dir
+        .join("bin")
+        .join("phpmyadmin")
+        .join("index.php")
+        .is_file()
+    {
         ensure_pma_config(install_dir, ports)?;
     }
     Ok(())

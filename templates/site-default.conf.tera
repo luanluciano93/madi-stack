@@ -1,6 +1,37 @@
 # MadiStack — site template for virtual hosts (Sprint 3)
 # {{ site_name }}
 
+{% if ssl -%}
+# HTTPS enabled: HTTP redirects to HTTPS, HTTPS serves content.
+server {
+    listen {{ ports.bind_address }}:{{ ports.http }};
+    server_name {{ site_name }}.test;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen {{ ports.bind_address }}:443 ssl;
+    server_name {{ site_name }}.test;
+
+    ssl_certificate "{{ ssl_cert }}";
+    ssl_certificate_key "{{ ssl_key }}";
+
+    root "{{ document_root }}";
+    index index.php index.html;
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location ~ \.php$ {
+        fastcgi_pass 127.0.0.1:{{ ports.php_fcgi }};
+        fastcgi_index index.php;
+        include "{{ install_dir }}/bin/nginx/conf/fastcgi_params";
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_param HTTPS on;
+    }
+}
+{%- else -%}
 server {
     listen {{ ports.bind_address }}:{{ ports.http }};
     server_name {{ site_name }}.test;
@@ -19,3 +50,4 @@ server {
         fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
     }
 }
+{%- endif %}
