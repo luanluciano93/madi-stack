@@ -93,33 +93,28 @@ mod tests {
         buf
     }
 
+    /// Write `bytes` into a fresh tempdir managed by the `tempfile` crate
+    /// — PID + atomic counter + random bytes, safe against parallel
+    /// `cargo test` runs on platforms with coarse system clocks (Windows'
+    /// ~16ms tick resolution used to cause collisions with a homegrown
+    /// nanosecond-based id). The `TempDir` handle is returned so the
+    /// directory lives until the test finishes.
     fn write_tmp_zip(bytes: &[u8]) -> TempZip {
-        let dir = std::env::temp_dir().join(format!("madi-zip-{}", rand_id()));
-        std::fs::create_dir_all(&dir).unwrap();
-        let zip = dir.join("test.zip");
+        let dir = tempfile::tempdir().unwrap();
+        let zip = dir.path().join("test.zip");
         std::fs::write(&zip, bytes).unwrap();
         TempZip { dir, zip }
     }
 
     struct TempZip {
-        dir: std::path::PathBuf,
+        dir: tempfile::TempDir,
         zip: std::path::PathBuf,
     }
-    impl Drop for TempZip {
-        fn drop(&mut self) {
-            let _ = std::fs::remove_dir_all(&self.dir);
-        }
-    }
 
-    fn rand_id() -> String {
-        use std::time::{SystemTime, UNIX_EPOCH};
-        format!(
-            "{}",
-            SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .unwrap()
-                .as_nanos()
-        )
+    impl TempZip {
+        fn dir(&self) -> &std::path::Path {
+            self.dir.path()
+        }
     }
 
     #[test]
@@ -131,7 +126,7 @@ mod tests {
             ("nginx-1.29.8/conf/mime.types", b"types"),
         ]);
         let tmp = write_tmp_zip(&bytes);
-        let out = tmp.dir.join("extracted");
+        let out = tmp.dir().join("extracted");
 
         extract_zip_sync(&tmp.zip, &out).unwrap();
 
@@ -148,7 +143,7 @@ mod tests {
             ("ext/opcache.dll", b"DLL"),
         ]);
         let tmp = write_tmp_zip(&bytes);
-        let out = tmp.dir.join("extracted");
+        let out = tmp.dir().join("extracted");
 
         extract_zip_sync(&tmp.zip, &out).unwrap();
 
@@ -161,7 +156,7 @@ mod tests {
     fn rejects_zip_slip() {
         let bytes = make_zip(&[("../../evil.exe", b"bad")]);
         let tmp = write_tmp_zip(&bytes);
-        let out = tmp.dir.join("extracted");
+        let out = tmp.dir().join("extracted");
         let err = extract_zip_sync(&tmp.zip, &out).unwrap_err();
         assert!(matches!(err, DownloadError::UnsafePath(_)));
     }
