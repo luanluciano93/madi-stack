@@ -56,19 +56,29 @@ Cansado do **USBWebserver** travado no Apache 2.2 e em versões antigas do PHP? 
 
 ## 📥 Download
 
-Pegue a versão mais recente na [**página de Releases**](https://github.com/luanluciano93/MadiStack/releases).
+Pegue a versão mais recente na [**página de Releases**](https://github.com/luanluciano93/MadiStack/releases/latest). Três formatos, escolha o que se encaixa no seu fluxo:
 
-> **Requisitos:** Windows 10 ou superior. [WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/) (já vem no Windows 11, instalação automática no Windows 10).
+| Arquivo | Tamanho | Quando usar |
+| --- | --- | --- |
+| `MadiStack_X.Y.Z_x64-setup.exe` | ~4 MB | **Instalador NSIS** — cria atalhos no menu Iniciar e registra desinstalador. Recomendado pra uso diário. |
+| `MadiStack_X.Y.Z_x64_en-US.msi` | ~6 MB | **Instalador MSI** — pra deploy corporativo via políticas de grupo ou Intune. |
+| `MadiStack_vX.Y.Z_x64-portable.zip` | ~5 MB | **Portátil** — descompacta + roda. Dois executáveis, zero instalação. Ideal para pen drive ou testar sem sujar a máquina. |
+
+> **Requisitos:** Windows 10 ou superior x64 + [WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/) (já vem no Windows 11, instalação automática no Windows 10).
+
+> **SmartScreen:** o binário **ainda não é assinado digitalmente**. Na primeira execução o Windows pode mostrar o aviso "O Windows protegeu o seu PC" — clique em **Mais informações → Executar assim mesmo**. Code signing com certificado EV está planejado para o v1.0.
 
 ## 🚀 Início Rápido
 
-1. Baixe o `MadiStack-x.x.x.zip` da página de Releases
-2. Extraia em qualquer lugar (pen drive funciona perfeitamente)
-3. Execute `MadiStack.exe`
-4. Na primeira execução, os componentes são baixados e configurados automaticamente (~2 minutos, só uma vez)
-5. Clique em **Start** nas abas Nginx e MariaDB
-6. Coloque seu projeto PHP na pasta `www/`
-7. Abra http://localhost no navegador — pronto! 🎉
+1. Baixe **um** dos arquivos acima da [página de Releases](https://github.com/luanluciano93/MadiStack/releases/latest).
+2. **Se escolheu o portátil**: extraia em qualquer pasta. **Se escolheu o instalador**: execute e siga o wizard.
+3. Abra o `MadiStack.exe`.
+4. Na aba **Geral**, clique em **Baixar tudo** — Nginx, PHP, MariaDB e phpMyAdmin são baixados das fontes oficiais (~2 minutos, só uma vez).
+5. Clique em **Iniciar** nos três serviços.
+6. Coloque seu projeto em `www/meusite/` e ative o site na aba **Sites** — ele fica acessível em `http://meusite.test`.
+7. Pronto. 🎉
+
+> **Dica:** se seu projeto roda direto no root, jogue os arquivos em `www/` e acesse `http://localhost:<porta>` (porta configurável na aba **Configurações**, padrão `80`).
 
 ## 📸 Screenshots
 
