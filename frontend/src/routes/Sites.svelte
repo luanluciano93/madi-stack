@@ -1,5 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { _ } from 'svelte-i18n';
+  import { get } from 'svelte/store';
   import { open as shellOpen } from '@tauri-apps/plugin-shell';
   import { ipc, type VhostDto } from '$lib/ipc';
 
@@ -35,12 +37,14 @@
     error = null;
     success = null;
     const https = httpsChoice[name] ?? false;
+    const t = get(_);
     try {
       await ipc.vhostEnable(name, https);
       flashSuccess(
-        https
-          ? `${name}.test ativado com HTTPS`
-          : `${name}.test ativado`,
+        t(
+          https ? 'sites.enabled_https_success' : 'sites.enabled_success',
+          { values: { hostname: `${name}.test` } },
+        ),
       );
       await refresh();
     } catch (e) {
@@ -54,9 +58,12 @@
     busy = name;
     error = null;
     success = null;
+    const t = get(_);
     try {
       await ipc.vhostDisable(name);
-      flashSuccess(`${name}.test desativado`);
+      flashSuccess(
+        t('sites.disabled_success', { values: { hostname: `${name}.test` } }),
+      );
       await refresh();
     } catch (e) {
       error = String(e);
@@ -87,29 +94,23 @@
 <section class="space-y-6">
   <header class="flex items-start justify-between gap-4">
     <div>
-      <h2 class="text-2xl font-semibold">Sites</h2>
-      <p class="text-sm text-zinc-400">
-        Cada subpasta de <span class="font-mono text-zinc-300">www/</span> vira um site servido em
-        <span class="font-mono text-zinc-300">&lt;nome&gt;.test</span>. Ativar edita o arquivo
-        <span class="font-mono text-zinc-300">hosts</span> do Windows (pede UAC) e recarrega o nginx.
-      </p>
+      <h2 class="text-2xl font-semibold">{$_('sites.title')}</h2>
+      <p class="text-sm text-zinc-400">{@html $_('sites.subtitle_html')}</p>
     </div>
     <button
       type="button"
       onclick={refresh}
       class="shrink-0 rounded-md border border-zinc-700 px-3 py-1.5 text-sm text-zinc-200 hover:bg-zinc-800"
     >
-      Atualizar lista
+      {$_('actions.refresh')}
     </button>
   </header>
 
   {#if loading}
-    <p class="text-sm text-zinc-500">Carregando…</p>
+    <p class="text-sm text-zinc-500">{$_('common.loading')}</p>
   {:else if sites.length === 0}
     <div class="rounded-md border border-dashed border-zinc-700 p-6 text-sm text-zinc-400">
-      Nenhuma pasta em <span class="font-mono text-zinc-200">www/</span> ainda.
-      Crie uma pasta como <span class="font-mono text-zinc-200">www/meusite/</span>
-      com um <span class="font-mono text-zinc-200">index.php</span> e recarregue esta página.
+      {@html $_('sites.empty_html')}
     </div>
   {:else}
     <ul class="space-y-2">
@@ -127,7 +128,7 @@
             <div class="font-medium">{site.name}</div>
             <div class="text-xs text-zinc-500">
               <span class="font-mono">{site.hostname}</span>
-              · {site.enabled ? (site.ssl ? 'ativo · HTTPS' : 'ativo') : 'inativo'}
+              · {site.enabled ? (site.ssl ? $_('sites.active_https') : $_('sites.active')) : $_('sites.inactive')}
             </div>
           </div>
           {#if site.enabled}
@@ -136,7 +137,7 @@
               onclick={() => openInBrowser(site.hostname, site.ssl)}
               class="rounded-md border border-zinc-700 px-3 py-1.5 text-xs text-zinc-200 hover:bg-zinc-800"
             >
-              Abrir
+              {$_('actions.open')}
             </button>
             <button
               type="button"
@@ -144,17 +145,17 @@
               onclick={() => disable(site.name)}
               class="rounded-md border border-zinc-700 px-3 py-1.5 text-xs text-zinc-200 hover:bg-zinc-800 disabled:opacity-40"
             >
-              {busy === site.name ? '…' : 'Desativar'}
+              {busy === site.name ? '…' : $_('actions.disable')}
             </button>
           {:else}
-            <label class="flex items-center gap-1.5 text-xs text-zinc-400" title="Gera cert via mkcert na primeira vez (UAC uma só).">
+            <label class="flex items-center gap-1.5 text-xs text-zinc-400" title={$_('sites.https_toggle_title')}>
               <input
                 type="checkbox"
                 checked={httpsChoice[site.name] ?? false}
                 onchange={(e) => (httpsChoice[site.name] = e.currentTarget.checked)}
                 class="rounded border-zinc-700 bg-zinc-900"
               />
-              HTTPS
+              {$_('sites.https_toggle')}
             </label>
             <button
               type="button"
@@ -162,7 +163,7 @@
               onclick={() => enable(site.name)}
               class="rounded-md bg-brand-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-500 disabled:opacity-40"
             >
-              {busy === site.name ? 'Ativando…' : 'Ativar'}
+              {busy === site.name ? $_('sites.activating') : $_('actions.enable')}
             </button>
           {/if}
         </li>

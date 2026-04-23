@@ -206,7 +206,7 @@ MadiStack baixa e utiliza os seguintes componentes, cada um com sua própria lic
 
 ## 👤 Autor
 
-**Luan Luciano**
+**luanluciano93**
 
 - GitHub: [@luanluciano93](https://github.com/luanluciano93)
 - Projetos: [NexusAAC](https://github.com/luanluciano93/NexusAAC) · [TibiaTrace](https://github.com/luanluciano93/TibiaTrace)
@@ -224,6 +224,6 @@ Se o MadiStack te poupou tempo, considere:
 
 <div align="center">
 
-Feito com ❤️ em Birigui, Brasil 🇧🇷
+Feito com ❤️ em Araçatuba, São Paulo, Brasil 🇧🇷
 
 </div>

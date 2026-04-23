@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy, tick } from 'svelte';
+  import { _ } from 'svelte-i18n';
   import type { UnlistenFn } from '@tauri-apps/api/event';
   import {
     ipc,
@@ -131,16 +132,16 @@
         bind:checked={follow}
         class="rounded border-zinc-700 bg-zinc-900"
       />
-      auto-scroll
+      {$_('common.auto_scroll')}
     </label>
     <button
       type="button"
       onclick={copyAll}
       class="ml-auto rounded border border-zinc-700 px-2 py-0.5 text-zinc-300 hover:bg-zinc-800"
     >
-      {copied ? 'Copiado!' : 'Copiar'}
+      {copied ? $_('actions.copied') : $_('actions.copy')}
     </button>
-    <span class="text-zinc-500">{visible.length} linhas</span>
+    <span class="text-zinc-500">{$_('common.lines_count', { values: { count: visible.length } })}</span>
   </div>
 
   <div
@@ -149,7 +150,7 @@
     class={`select-text overflow-y-auto rounded-md border border-zinc-800 bg-zinc-950 p-2 font-mono text-xs leading-snug ${heightClass}`}
   >
     {#if visible.length === 0}
-      <p class="text-zinc-600">(vazio — inicie o serviço para ver logs)</p>
+      <p class="text-zinc-600">{$_('common.empty_logs')}</p>
     {/if}
     {#each visible as line (line.seq)}
       <div

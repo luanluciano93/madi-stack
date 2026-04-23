@@ -37,7 +37,7 @@
       "icons/icon.ico"
     ],
     "category": "DeveloperTool",
-    "copyright": "Copyright © 2026 Luan Luciano",
+    "copyright": "Copyright © 2026 luanluciano93",
     "shortDescription": "Portable web stack for Windows (Nginx + MariaDB + PHP).",
     "longDescription": "MadiStack is a modern, open-source alternative to USBWebserver. A portable Windows application to download, configure and manage Nginx, MariaDB, PHP and phpMyAdmin — with built-in auto-updater."
   },

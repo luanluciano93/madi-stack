@@ -142,3 +142,37 @@ pub async fn issue(install_dir: &Path, cert_dir: &Path, hostname: &str) -> anyho
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    //! Unit tests for the parts of the mkcert module that don't require an
+    //! actual `mkcert.exe` or network access. Download / issuance happen in
+    //! a separate live smoke test outside of `cargo test`.
+
+    use super::*;
+    use tempfile::tempdir;
+
+    #[test]
+    fn ca_installed_false_when_marker_missing() {
+        let dir = tempdir().unwrap();
+        assert!(!ca_installed(dir.path()));
+    }
+
+    #[test]
+    fn mark_ca_installed_creates_marker_and_ca_installed_returns_true() {
+        let dir = tempdir().unwrap();
+        mark_ca_installed(dir.path()).unwrap();
+        assert!(ca_installed(dir.path()));
+        // Marker path sits under `bin/mkcert/` — if that ever changes we
+        // want the test to flag the discovery break.
+        assert!(ca_marker_path(dir.path()).starts_with(dir.path().join("bin").join("mkcert")));
+    }
+
+    #[test]
+    fn mkcert_exe_path_is_portable() {
+        let dir = tempdir().unwrap();
+        let exe = mkcert_exe(dir.path());
+        assert!(exe.starts_with(dir.path()));
+        assert_eq!(exe.file_name().unwrap(), "mkcert.exe");
+    }
+}

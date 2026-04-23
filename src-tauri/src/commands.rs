@@ -929,3 +929,39 @@ async fn reload_nginx(install_dir: &std::path::Path) -> Result<(), String> {
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    //! Unit tests for command-level helpers that don't touch Tauri state.
+    //! Covers the validation surface that gatekeeps every vhost mutation —
+    //! if this regresses, malformed names slip into nginx configs and the
+    //! hosts file.
+
+    use super::*;
+
+    #[test]
+    fn vhost_name_accepts_typical_slugs() {
+        for name in ["app", "my-site", "site_1", "a", &"z".repeat(63)] {
+            assert!(
+                validate_vhost_name(name).is_ok(),
+                "expected {name:?} to be accepted"
+            );
+        }
+    }
+
+    #[test]
+    fn vhost_name_rejects_empty_and_too_long() {
+        assert!(validate_vhost_name("").is_err());
+        assert!(validate_vhost_name(&"z".repeat(64)).is_err());
+    }
+
+    #[test]
+    fn vhost_name_rejects_special_chars() {
+        for name in ["my site", "site/", "dot.ted", "../etc", "foo.bar", "é"] {
+            assert!(
+                validate_vhost_name(name).is_err(),
+                "expected {name:?} to be rejected"
+            );
+        }
+    }
+}

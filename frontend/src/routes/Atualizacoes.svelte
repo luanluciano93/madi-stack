@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
+  import { _ } from 'svelte-i18n';
   import type { UnlistenFn } from '@tauri-apps/api/event';
   import {
     ipc,
@@ -119,10 +120,8 @@
 <section class="space-y-4">
   <header class="flex items-start justify-between gap-3">
     <div>
-      <h2 class="text-2xl font-semibold">Atualizações</h2>
-      <p class="text-sm text-zinc-400">
-        Versões instaladas vs. últimas publicadas pelos projetos oficiais.
-      </p>
+      <h2 class="text-2xl font-semibold">{$_('updates.title')}</h2>
+      <p class="text-sm text-zinc-400">{$_('updates.subtitle')}</p>
     </div>
     <button
       type="button"
@@ -130,7 +129,7 @@
       disabled={checking}
       class="shrink-0 rounded-md border border-zinc-700 px-3 py-1.5 text-sm text-zinc-200 hover:bg-zinc-800 disabled:opacity-40"
     >
-      {checking ? 'Verificando…' : 'Verificar tudo'}
+      {checking ? $_('actions.updating') : $_('actions.check_for_updates')}
     </button>
   </header>
 
@@ -156,15 +155,15 @@
           <div class="min-w-0 flex-1">
             <div class="font-medium">{DISPLAY_NAME[row.slug]}</div>
             <div class="text-xs text-zinc-500">
-              instalado:
+              {$_('updates.installed_label')}:
               {#if row.current}
                 <span class="font-mono text-zinc-300">{row.current}</span>
               {:else if row.installed_on_disk}
-                <span class="font-mono text-amber-400" title="Binário presente em bin/, mas o MadiStack não registrou a versão. Reinstale para sincronizar.">versão desconhecida</span>
+                <span class="font-mono text-amber-400" title={$_('updates.unknown_version_tooltip')}>{$_('common.unknown_version')}</span>
               {:else}
                 <span class="font-mono text-zinc-500">—</span>
               {/if}
-              · disponível:
+              · {$_('updates.available_label')}:
               <span
                 class="font-mono {row.update_available
                   ? 'text-emerald-400'
@@ -181,31 +180,31 @@
               onclick={() => apply(i)}
               class="rounded-md bg-brand-600 px-3 py-1.5 text-sm text-white hover:bg-brand-500 disabled:opacity-40"
             >
-              {inFlight ? 'Atualizando…' : 'Atualizar'}
+              {inFlight ? $_('actions.updating') : $_('actions.update')}
             </button>
           {:else if row.current}
-            <span class="text-xs text-zinc-500">em dia</span>
+            <span class="text-xs text-zinc-500">{$_('common.up_to_date')}</span>
           {:else if row.installed_on_disk}
             <button
               type="button"
               disabled={inFlight}
               onclick={() => apply(i)}
               class="rounded-md border border-amber-500/60 px-3 py-1.5 text-sm text-amber-300 hover:bg-amber-500/10 disabled:opacity-40"
-              title="Baixa a versão atual e registra no MadiStack para habilitar auto-update."
+              title={$_('updates.sync_tooltip')}
             >
-              {inFlight ? 'Sincronizando…' : 'Sincronizar versão'}
+              {inFlight ? $_('updates.syncing') : $_('actions.sync_version')}
             </button>
           {:else}
-            <span class="text-xs text-zinc-500">não instalado</span>
+            <span class="text-xs text-zinc-500">{$_('common.not_installed')}</span>
           {/if}
           {#if row.current}
             <button
               type="button"
               onclick={() => rollback(i)}
               class="rounded-md border border-zinc-800 px-2.5 py-1.5 text-xs text-zinc-400 hover:bg-zinc-800"
-              title="Trocar para bin/{row.slug}.bak/ (se existir)"
+              title={$_('updates.rollback_tooltip', { values: { slug: row.slug } })}
             >
-              Reverter
+              {$_('actions.rollback')}
             </button>
           {/if}
         </div>

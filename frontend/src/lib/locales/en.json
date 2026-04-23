@@ -33,7 +33,8 @@
     "update": "Update",
     "updating": "Updating…",
     "rollback": "Rollback",
-    "sync_version": "Sync version"
+    "sync_version": "Sync version",
+    "dismiss": "Dismiss"
   },
   "common": {
     "loading": "Loading…",
@@ -44,7 +45,10 @@
     "installed": "installed",
     "up_to_date": "up to date",
     "unknown_version": "unknown version",
-    "error": "Error"
+    "error": "Error",
+    "empty_logs": "(empty — start the service to see logs)",
+    "lines_count": "{count} lines",
+    "auto_scroll": "auto-scroll"
   },
   "config": {
     "title": "Settings",
@@ -53,16 +57,27 @@
     "port_mariadb": "MariaDB port",
     "port_php": "PHP FastCGI port",
     "bind_address": "Bind address",
+    "bind_local": "127.0.0.1 (local only)",
+    "bind_any": "0.0.0.0 (LAN — careful)",
+    "preferences": "Preferences",
     "language": "Language",
     "open_browser_on_start": "Open browser on start",
     "minimize_on_start": "Minimize to tray on start",
+    "theme": "Theme",
+    "theme_dark": "Dark",
+    "theme_light": "Light",
     "firewall_header": "Windows Firewall",
     "firewall_desc": "Inbound rules for nginx, MariaDB and php-cgi. Batched into a single UAC prompt.",
+    "firewall_rule_present": "rule present",
+    "firewall_rule_absent": "absent",
     "firewall_create": "Create / Recreate rules",
     "firewall_remove": "Remove",
+    "firewall_applying": "Applying…",
     "firewall_applied": "Rules applied successfully.",
     "firewall_removed": "Rules removed.",
-    "port_in_use_by_self": "in use by MadiStack itself"
+    "port_in_use_by_self": "in use by MadiStack itself",
+    "port_occupied_unknown": "occupied by an unknown process",
+    "port_occupied_by": "occupied by pid {pid} ({name})"
   },
   "sites": {
     "title": "Sites",
@@ -72,19 +87,53 @@
     "https_toggle_title": "Issues cert via mkcert on first use (single UAC prompt).",
     "active": "active",
     "active_https": "active · HTTPS",
-    "inactive": "inactive"
+    "inactive": "inactive",
+    "enabled_success": "{hostname} enabled",
+    "enabled_https_success": "{hostname} enabled with HTTPS",
+    "disabled_success": "{hostname} disabled",
+    "activating": "Enabling…"
   },
   "updates": {
     "title": "Updates",
     "subtitle": "Installed versions vs. latest published by upstream.",
     "installed_label": "installed",
-    "available_label": "available"
+    "available_label": "available",
+    "unknown_version_tooltip": "Binary present in bin/, but MadiStack didn't record the version. Reinstall to sync.",
+    "sync_tooltip": "Downloads the current version and registers it in MadiStack to enable auto-update.",
+    "syncing": "Syncing…",
+    "rollback_tooltip": "Switch to bin/{slug}.bak/ (if it exists)"
   },
   "geral": {
     "title": "General",
     "subtitle": "Service status and controls.",
     "install_all": "Download all",
+    "installing_all": "Downloading…",
+    "install_all_failed": "Failed to install all: {error}",
     "ping_backend": "ping backend",
-    "pma_served_by_nginx": "served by nginx"
+    "pma_served_by_nginx": "served by nginx",
+    "pma_open_tooltip": "Open http://localhost:{port}/phpmyadmin/ in the default browser",
+    "onboarding_title": "First time here?",
+    "onboarding_body_html": "Click <strong>Download all</strong> to fetch nginx, PHP, MariaDB and phpMyAdmin from official sources (first run takes ~2 min). Then, on each row, <strong>Start</strong> brings the service up. Put your sites in subfolders of <code>www/</code> and the <strong>Sites</strong> tab turns each one into <code>&lt;name&gt;.test</code>.",
+    "phase_resolving": "Resolving…",
+    "phase_downloading": "Downloading",
+    "phase_verifying": "Verifying",
+    "phase_extracting": "Extracting",
+    "phase_done": "Done",
+    "phase_error": "Error"
+  },
+  "service": {
+    "logs_title": "Logs",
+    "stream_all": "all",
+    "stream_stdout": "stdout",
+    "stream_stderr": "stderr"
+  },
+  "about": {
+    "title": "About",
+    "description": "modern, open-source alternative to USBWebserver for Windows, built with Rust + Tauri.",
+    "version_label": "Version",
+    "license": "License",
+    "author": "Author",
+    "repository": "Repository",
+    "made_in": "Made with ❤ in Araçatuba, São Paulo, Brazil 🇧🇷"
   }
 }

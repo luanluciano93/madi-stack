@@ -292,3 +292,92 @@ mod imp {
         Err(ElevatedError::HelperFailed(-1))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    //! Wire-format tests for the main↔helper JSON protocol.
+    //!
+    //! The helper parses requests with its own private `Request` /
+    //! `Operation` structs; we can't import those, so we mirror the
+    //! expected shape here and test that our `OpPayload` serialization
+    //! produces exactly what the helper would deserialize.
+    //!
+    //! If these break, the helper will reject requests at runtime with
+    //! "malformed request" — which is hard to debug. Catch it at CI time.
+
+    use super::*;
+    use serde_json::json;
+
+    fn serialize(op: OpPayload<'_>) -> serde_json::Value {
+        let req = Request {
+            op,
+            output: PathBuf::from("C:/tmp/out.json"),
+        };
+        serde_json::to_value(&req).unwrap()
+    }
+
+    #[test]
+    fn firewall_ensure_wire_format() {
+        let rule = FirewallRule::new("n", "d", PathBuf::from("C:/exe.exe"));
+        let payload = OpPayload::FirewallEnsure {
+            rules: vec![RuleSpec {
+                name: &rule.name,
+                description: &rule.description,
+                program: &rule.program,
+            }],
+        };
+        let got = serialize(payload);
+        assert_eq!(got["op"]["kind"], json!("firewall_ensure"));
+        assert_eq!(got["op"]["rules"][0]["name"], json!("n"));
+        assert_eq!(got["op"]["rules"][0]["description"], json!("d"));
+    }
+
+    #[test]
+    fn hosts_edit_wire_format() {
+        let add = vec![HostEntry::new("127.0.0.1", "foo.test", "vhost:foo")];
+        let remove: Vec<String> = vec!["vhost:bar".into()];
+        let payload = OpPayload::HostsEdit {
+            add: &add,
+            remove_tags: &remove,
+        };
+        let got = serialize(payload);
+        assert_eq!(got["op"]["kind"], json!("hosts_edit"));
+        assert_eq!(got["op"]["add"][0]["ip"], json!("127.0.0.1"));
+        assert_eq!(got["op"]["add"][0]["hostname"], json!("foo.test"));
+        assert_eq!(got["op"]["add"][0]["tag"], json!("vhost:foo"));
+        assert_eq!(got["op"]["remove_tags"][0], json!("vhost:bar"));
+    }
+
+    #[test]
+    fn mkcert_install_wire_format() {
+        let exe = PathBuf::from("C:/bin/mkcert.exe");
+        let payload = OpPayload::MkcertInstall { mkcert_exe: &exe };
+        let got = serialize(payload);
+        assert_eq!(got["op"]["kind"], json!("mkcert_install"));
+        // Path serializes with the native separator — accept either form
+        // so the test doesn't break on Unix dev machines.
+        let got_path = got["op"]["mkcert_exe"].as_str().unwrap();
+        assert!(got_path.ends_with("mkcert.exe"));
+    }
+
+    #[test]
+    fn helper_missing_returns_helper_missing_error() {
+        let bogus = PathBuf::from("C:/does/not/exist/helper.exe");
+        let err = run_elevated_ensure(&bogus, &[]).unwrap_err();
+        match err {
+            ElevatedError::HelperMissing(p) => assert_eq!(p, bogus),
+            other => panic!("unexpected error variant: {other:?}"),
+        }
+    }
+
+    #[test]
+    fn host_entry_builder_trims_nothing() {
+        // `HostEntry::new` is a thin constructor — assert it doesn't
+        // accidentally mangle input (we had a bug where hostnames with
+        // trailing slashes broke the helper).
+        let e = HostEntry::new("127.0.0.1", "foo.test", "vhost:foo");
+        assert_eq!(e.ip, "127.0.0.1");
+        assert_eq!(e.hostname, "foo.test");
+        assert_eq!(e.tag, "vhost:foo");
+    }
+}

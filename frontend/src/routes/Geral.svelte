@@ -1,5 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
+  import { _ } from 'svelte-i18n';
+  import { get } from 'svelte/store';
   import type { UnlistenFn } from '@tauri-apps/api/event';
   import { open as shellOpen } from '@tauri-apps/plugin-shell';
   import StatusLed from '$lib/components/StatusLed.svelte';
@@ -169,19 +171,20 @@
   }
 
   function phaseLabel(p: InstallPhase | 'idle'): string {
+    const t = get(_);
     switch (p) {
       case 'resolving':
-        return 'resolvendo versão…';
+        return t('geral.phase_resolving');
       case 'downloading':
-        return 'baixando';
+        return t('geral.phase_downloading');
       case 'verifying':
-        return 'verificando SHA256…';
+        return t('geral.phase_verifying');
       case 'extracting':
-        return 'extraindo…';
+        return t('geral.phase_extracting');
       case 'done':
-        return 'instalado';
+        return t('geral.phase_done');
       case 'error':
-        return 'erro';
+        return t('geral.phase_error');
       default:
         return '';
     }
@@ -226,8 +229,8 @@
 <section class="space-y-6">
   <header class="flex items-start justify-between gap-3">
     <div>
-      <h2 class="text-2xl font-semibold">Geral</h2>
-      <p class="text-sm text-zinc-400">Controle e status dos serviços.</p>
+      <h2 class="text-2xl font-semibold">{$_('geral.title')}</h2>
+      <p class="text-sm text-zinc-400">{$_('geral.subtitle')}</p>
     </div>
     {#if rows.some((r) => !r.installed)}
       <button
@@ -236,7 +239,7 @@
         disabled={installingAll || rows.some((r) => r.install.phase !== 'idle' && r.install.phase !== 'done' && r.install.phase !== 'error')}
         class="shrink-0 rounded-md bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-40"
       >
-        {installingAll ? 'Baixando…' : 'Baixar tudo'}
+        {installingAll ? $_('geral.installing_all') : $_('geral.install_all')}
       </button>
     {/if}
   </header>
@@ -246,21 +249,14 @@
       <div class="flex items-start gap-3">
         <span class="text-lg" aria-hidden="true">👋</span>
         <div class="flex-1 space-y-1">
-          <div class="font-medium text-brand-400">Primeira vez por aqui?</div>
-          <p class="text-zinc-300">
-            Clique em <span class="font-medium">Baixar tudo</span> para buscar nginx, PHP, MariaDB
-            e phpMyAdmin das fontes oficiais (primeiro uso leva ~2 min). Depois, em cada linha,
-            o botão <span class="font-medium">Iniciar</span> sobe o serviço. Coloque seus sites
-            em subpastas de <code class="rounded bg-zinc-800 px-1 py-0.5 text-xs">www/</code> e
-            a aba <span class="font-medium">Sites</span> transforma cada uma em
-            <code class="rounded bg-zinc-800 px-1 py-0.5 text-xs">&lt;nome&gt;.test</code>.
-          </p>
+          <div class="font-medium text-brand-400">{$_('geral.onboarding_title')}</div>
+          <p class="text-zinc-300">{@html $_('geral.onboarding_body_html')}</p>
         </div>
         <button
           type="button"
           onclick={dismissOnboarding}
           class="text-zinc-500 hover:text-zinc-200"
-          aria-label="Dispensar"
+          aria-label={$_('actions.dismiss')}
         >
           ✕
         </button>
@@ -269,7 +265,7 @@
   {/if}
 
   {#if installError}
-    <p class="text-sm text-red-400">Falha ao instalar tudo: {installError}</p>
+    <p class="text-sm text-red-400">{$_('geral.install_all_failed', { values: { error: installError } })}</p>
   {/if}
 
   <div class="space-y-2">
@@ -293,11 +289,11 @@
             <div class="font-medium">{row.info.name}</div>
             <div class="text-xs text-zinc-500">
               {#if !row.installed && !inFlight}
-                não instalado
+                {$_('common.not_installed')}
               {:else if isPma}
-                servido pelo nginx
+                {$_('geral.pma_served_by_nginx')}
               {:else}
-                {row.status}
+                {$_(`common.${row.status === 'starting' || row.status === 'stopping' ? 'running' : row.status}`)}
               {/if}
               {#if row.error}
                 <span class="ml-2 text-red-400">— {row.error}</span>
@@ -311,16 +307,16 @@
               onclick={() => installOne(i)}
               class="rounded-md bg-brand-600 px-3 py-1.5 text-sm text-white hover:bg-brand-500 disabled:opacity-40"
             >
-              {inFlight ? 'Instalando…' : 'Instalar'}
+              {inFlight ? $_('actions.installing') : $_('actions.install')}
             </button>
           {:else if isPma}
             <button
               type="button"
               onclick={openPhpMyAdmin}
               class="rounded-md bg-brand-600 px-3 py-1.5 text-sm text-white hover:bg-brand-500"
-              title={`Abrir http://localhost:${httpPort}/phpmyadmin/ no navegador padrão`}
+              title={$_('geral.pma_open_tooltip', { values: { port: httpPort } })}
             >
-              Abrir
+              {$_('actions.open')}
             </button>
           {:else}
             <button
@@ -329,7 +325,7 @@
               onclick={() => start(i)}
               class="rounded-md bg-brand-600 px-3 py-1.5 text-sm text-white hover:bg-brand-500 disabled:opacity-40"
             >
-              Iniciar
+              {$_('actions.start')}
             </button>
             <button
               type="button"
@@ -337,7 +333,7 @@
               onclick={() => stop(i)}
               class="rounded-md border border-zinc-700 px-3 py-1.5 text-sm hover:bg-zinc-800 disabled:opacity-40"
             >
-              Parar
+              {$_('actions.stop')}
             </button>
           {/if}
         </div>
@@ -371,7 +367,7 @@
       onclick={pingBackend}
       class="rounded-md bg-brand-600 px-3 py-1.5 text-sm text-white hover:bg-brand-500"
     >
-      ping backend
+      {$_('geral.ping_backend')}
     </button>
     {#if reply}
       <span class="ml-3 font-mono text-sm text-emerald-400">{reply}</span>

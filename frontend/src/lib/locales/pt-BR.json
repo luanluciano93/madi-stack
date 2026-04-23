@@ -33,7 +33,8 @@
     "update": "Atualizar",
     "updating": "Atualizando…",
     "rollback": "Reverter",
-    "sync_version": "Sincronizar versão"
+    "sync_version": "Sincronizar versão",
+    "dismiss": "Dispensar"
   },
   "common": {
     "loading": "Carregando…",
@@ -44,7 +45,10 @@
     "installed": "instalado",
     "up_to_date": "em dia",
     "unknown_version": "versão desconhecida",
-    "error": "Erro"
+    "error": "Erro",
+    "empty_logs": "(vazio — inicie o serviço para ver logs)",
+    "lines_count": "{count} linhas",
+    "auto_scroll": "auto-scroll"
   },
   "config": {
     "title": "Configurações",
@@ -53,16 +57,27 @@
     "port_mariadb": "Porta MariaDB",
     "port_php": "Porta PHP FastCGI",
     "bind_address": "Bind address",
+    "bind_local": "127.0.0.1 (apenas local)",
+    "bind_any": "0.0.0.0 (rede local — cuidado)",
+    "preferences": "Preferências",
     "language": "Idioma",
     "open_browser_on_start": "Abrir navegador ao iniciar",
     "minimize_on_start": "Minimizar para a bandeja ao iniciar",
+    "theme": "Tema",
+    "theme_dark": "Escuro",
+    "theme_light": "Claro",
     "firewall_header": "Firewall do Windows",
     "firewall_desc": "Regras inbound para nginx, MariaDB e php-cgi. Criadas em lote — um único prompt de UAC.",
+    "firewall_rule_present": "regra presente",
+    "firewall_rule_absent": "ausente",
     "firewall_create": "Criar / Recriar regras",
     "firewall_remove": "Remover",
+    "firewall_applying": "Aplicando…",
     "firewall_applied": "Regras aplicadas com sucesso.",
     "firewall_removed": "Regras removidas.",
-    "port_in_use_by_self": "em uso pelo próprio MadiStack"
+    "port_in_use_by_self": "em uso pelo próprio MadiStack",
+    "port_occupied_unknown": "ocupada por processo desconhecido",
+    "port_occupied_by": "ocupada por pid {pid} ({name})"
   },
   "sites": {
     "title": "Sites",
@@ -72,19 +87,53 @@
     "https_toggle_title": "Gera cert via mkcert na primeira vez (UAC uma só).",
     "active": "ativo",
     "active_https": "ativo · HTTPS",
-    "inactive": "inativo"
+    "inactive": "inativo",
+    "enabled_success": "{hostname} ativado",
+    "enabled_https_success": "{hostname} ativado com HTTPS",
+    "disabled_success": "{hostname} desativado",
+    "activating": "Ativando…"
   },
   "updates": {
     "title": "Atualizações",
     "subtitle": "Versões instaladas vs. últimas publicadas pelos projetos oficiais.",
     "installed_label": "instalado",
-    "available_label": "disponível"
+    "available_label": "disponível",
+    "unknown_version_tooltip": "Binário presente em bin/, mas o MadiStack não registrou a versão. Reinstale para sincronizar.",
+    "sync_tooltip": "Baixa a versão atual e registra no MadiStack para habilitar auto-update.",
+    "syncing": "Sincronizando…",
+    "rollback_tooltip": "Trocar para bin/{slug}.bak/ (se existir)"
   },
   "geral": {
     "title": "Geral",
     "subtitle": "Controle e status dos serviços.",
     "install_all": "Baixar tudo",
+    "installing_all": "Baixando…",
+    "install_all_failed": "Falha ao instalar tudo: {error}",
     "ping_backend": "ping backend",
-    "pma_served_by_nginx": "servido pelo nginx"
+    "pma_served_by_nginx": "servido pelo nginx",
+    "pma_open_tooltip": "Abrir http://localhost:{port}/phpmyadmin/ no navegador padrão",
+    "onboarding_title": "Primeira vez por aqui?",
+    "onboarding_body_html": "Clique em <strong>Baixar tudo</strong> para buscar nginx, PHP, MariaDB e phpMyAdmin das fontes oficiais (primeiro uso leva ~2 min). Depois, em cada linha, o botão <strong>Iniciar</strong> sobe o serviço. Coloque seus sites em subpastas de <code>www/</code> e a aba <strong>Sites</strong> transforma cada uma em <code>&lt;nome&gt;.test</code>.",
+    "phase_resolving": "Resolvendo…",
+    "phase_downloading": "Baixando",
+    "phase_verifying": "Verificando",
+    "phase_extracting": "Extraindo",
+    "phase_done": "Pronto",
+    "phase_error": "Erro"
+  },
+  "service": {
+    "logs_title": "Logs",
+    "stream_all": "all",
+    "stream_stdout": "stdout",
+    "stream_stderr": "stderr"
+  },
+  "about": {
+    "title": "Sobre",
+    "description": "alternativa moderna e open-source ao USBWebserver para Windows, construída em Rust + Tauri.",
+    "version_label": "Versão",
+    "license": "Licença",
+    "author": "Autor",
+    "repository": "Repositório",
+    "made_in": "Feito com ❤ em Araçatuba, São Paulo, Brasil 🇧🇷"
   }
 }

@@ -44,6 +44,9 @@ parking_lot        = { workspace = true }
 directories        = { workspace = true }
 semver             = { workspace = true }
 
+[dev-dependencies]
+tempfile = { workspace = true }
+
 [features]
 # this feature is used for production builds or when a dev server is not specified
 # DO NOT REMOVE!!
