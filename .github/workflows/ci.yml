@@ -82,5 +82,17 @@ jobs:
         run: pnpm install --frozen-lockfile
         working-directory: frontend
 
+      # tauri-cli isn't a rustup component — have to install the cargo
+      # subcommand explicitly on the runner. `--locked` guarantees the
+      # same version dev machines use (pinned via Cargo.lock).
+      - name: Install tauri-cli
+        run: cargo install tauri-cli --version "^2.0" --locked
+
+      # Build the elevated helper first so src-tauri/build.rs can stage
+      # it as the `externalBin` sidecar — without this the Tauri build
+      # fails with "resource path ... doesn't exist" before linking.
+      - name: Build system-helper
+        run: cargo build -p madistack-system-helper
+
       - name: Build Tauri app
         run: cargo tauri build --no-bundle
