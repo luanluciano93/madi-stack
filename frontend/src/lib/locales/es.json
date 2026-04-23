@@ -159,6 +159,15 @@
     "license": "Licencia",
     "author": "Autor",
     "repository": "Repositorio",
-    "made_in": "Hecho con ❤ en Araçatuba, São Paulo, Brasil 🇧🇷"
+    "made_in": "Hecho con ❤ en Araçatuba, São Paulo, Brasil 🇧🇷",
+    "update_title": "Actualizaciones de MadiStack",
+    "update_check": "Verificar",
+    "update_checking": "Verificando…",
+    "update_idle_hint": "Haga clic en Verificar para consultar GitHub.",
+    "update_up_to_date": "Está en la versión más reciente.",
+    "update_available": "Nueva versión disponible: {version}",
+    "update_install": "Descargar e instalar",
+    "update_downloading": "Descargando…",
+    "update_downloading_sized": "Descargando… {received} / {total} MB"
   }
 }

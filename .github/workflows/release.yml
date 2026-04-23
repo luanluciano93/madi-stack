@@ -12,6 +12,22 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v5
+        # Full history + tags: git-cliff needs them to walk commits
+        # between the previous and the current tag.
+        with:
+          fetch-depth: 0
+
+      # Turn conventional commits since the last tag into a Markdown
+      # changelog. The output file is fed into tauri-action as the
+      # release body, so the draft already arrives with release notes.
+      - name: Generate changelog
+        id: changelog
+        uses: orhun/git-cliff-action@v4
+        with:
+          config: cliff.toml
+          args: --latest --strip header
+        env:
+          OUTPUT: CHANGELOG_FRAGMENT.md
 
       - uses: dtolnay/rust-toolchain@stable
 
@@ -42,12 +58,25 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Tauri's auto-updater ships signed NSIS installers. These two
+          # secrets must be set in the repo for `latest.json` (the feed
+          # the in-app "Check for updates" button reads) to be generated.
+          # Generate once with `cargo tauri signer generate -w key.pem`:
+          #   TAURI_SIGNING_PRIVATE_KEY      → contents of key.pem
+          #   TAURI_SIGNING_PRIVATE_KEY_PASSWORD → password used on generation
+          # The matching public key goes in `src-tauri/tauri.conf.json`
+          # under `plugins.updater.pubkey`.
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: ${{ github.ref_name }}
           releaseName: 'MadiStack ${{ github.ref_name }}'
+          releaseBody: ${{ steps.changelog.outputs.content }}
           releaseDraft: true
           prerelease: false
-          includeUpdaterJson: false
+          # Enable once the signing secrets above are configured; until
+          # then keep `false` so builds don't fail on missing signer.
+          includeUpdaterJson: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY != '' }}
 
       # Package the standalone binaries into a portable zip so users who
       # don't want the NSIS/MSI installer can just unzip + run. Both exes

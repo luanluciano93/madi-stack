@@ -96,3 +96,38 @@ jobs:
 
       - name: Build Tauri app
         run: cargo tauri build --no-bundle
+
+  e2e-sources:
+    name: E2E — upstream sources reachable
+    runs-on: windows-latest
+    needs: rust
+    # Daily smoke test: nginx.org / windows.php.net / mariadb.org /
+    # phpmyadmin.net all break their HTML or JSON layouts occasionally.
+    # Catching it here means we know within 24h, before a user reports
+    # "auto-update says nothing is available".
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Build CLI
+        run: cargo build --release -p madistack-cli
+
+      - name: Resolve latest for each component
+        # `sources` prints one row per component with columns
+        # "COMPONENT  VERSION  SHA?  FILE". Fail fast if any component
+        # fails to resolve — most often because the upstream site
+        # changed its HTML or JSON layout and our parser broke.
+        shell: pwsh
+        run: |
+          $out = & target/release/madistack-cli.exe sources 2>&1 | Out-String
+          if ($LASTEXITCODE -ne 0) { throw "sources command failed`n$out" }
+          Write-Host $out
+          foreach ($name in 'Nginx', 'PHP', 'MariaDB', 'phpMyAdmin') {
+            if ($out -notmatch "(?im)^\s*$([regex]::Escape($name))\s+\d+\.\d+\.\d+") {
+              throw "No version resolved for $name — upstream API likely changed."
+            }
+          }
+          Write-Host "All 4 upstreams reachable and returning semver."

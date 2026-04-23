@@ -1,0 +1,46 @@
+# git-cliff configuration for MadiStack — used by release.yml to turn
+# conventional commits since the last tag into a changelog section.
+# Tweak the regex in `commit_parsers` if you introduce a new prefix.
+
+[changelog]
+header = ""
+body = """
+{% if version %}{% else %}## Unreleased
+{% endif %}\
+{% for group, commits in commits | group_by(attribute="group") %}
+### {{ group | striptags | trim | upper_first }}
+{% for commit in commits %}
+- {% if commit.breaking %}⚠️ **BREAKING:** {% endif %}\
+{{ commit.message | split(pat="\n") | first | upper_first }}\
+{% if commit.github.username %} (@{{ commit.github.username }}){% endif %}\
+{% if commit.github.pr_number %} in #{{ commit.github.pr_number }}{% endif %}
+{% endfor %}
+{% endfor %}\n
+"""
+trim = true
+footer = ""
+
+[git]
+# Conventional-commits parser: `type(scope)?: subject`. We strip the type
+# from the final bullet because the section heading already groups by it.
+conventional_commits = true
+filter_unconventional = false
+split_commits = false
+commit_parsers = [
+    { message = "^feat", group = "✨ Novidades" },
+    { message = "^fix", group = "🐛 Correções" },
+    { message = "^perf", group = "⚡ Performance" },
+    { message = "^refactor", group = "♻️ Refatorações" },
+    { message = "^docs", group = "📝 Documentação" },
+    { message = "^test", group = "🧪 Testes" },
+    { message = "^ci", group = "🤖 CI / Build" },
+    { message = "^chore", skip = true },
+    { message = "^style", skip = true },
+    # Untagged commits — usually `update` or `merge`. Keep them in an
+    # Outros section so nothing silently vanishes.
+    { message = ".*", group = "🔧 Outros" },
+]
+filter_commits = false
+tag_pattern = "v[0-9]+\\.[0-9]+\\.[0-9]+"
+topo_order = false
+sort_commits = "oldest"

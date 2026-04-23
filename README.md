@@ -182,6 +182,13 @@ Contribuições são muito bem-vindas! Seja um bug report, sugestão de feature 
 4. Faça push para a branch (`git push origin feature/minha-feature`)
 5. Abra um Pull Request
 
+## 🆘 Problemas?
+
+Erros comuns (porta ocupada, VC++ Redist, antivírus, SmartScreen,
+hosts que não resolve, certificado HTTPS, etc) estão documentados em
+**[docs/troubleshooting.md](docs/troubleshooting.md)** com solução
+passo-a-passo.
+
 ## ❓ FAQ
 
 <details>

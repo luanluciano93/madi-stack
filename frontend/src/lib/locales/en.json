@@ -159,6 +159,15 @@
     "license": "License",
     "author": "Author",
     "repository": "Repository",
-    "made_in": "Made with ❤ in Araçatuba, São Paulo, Brazil 🇧🇷"
+    "made_in": "Made with ❤ in Araçatuba, São Paulo, Brazil 🇧🇷",
+    "update_title": "MadiStack updates",
+    "update_check": "Check",
+    "update_checking": "Checking…",
+    "update_idle_hint": "Click Check to query GitHub.",
+    "update_up_to_date": "You're on the latest version.",
+    "update_available": "New version available: {version}",
+    "update_install": "Download and install",
+    "update_downloading": "Downloading…",
+    "update_downloading_sized": "Downloading… {received} / {total} MB"
   }
 }
