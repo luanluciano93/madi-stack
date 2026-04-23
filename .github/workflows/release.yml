@@ -38,6 +38,7 @@ jobs:
         run: cargo build --release -p madistack-system-helper
 
       - name: Build & bundle
+        id: tauri
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -47,3 +48,25 @@ jobs:
           releaseDraft: true
           prerelease: false
           includeUpdaterJson: false
+
+      # Package the standalone binaries into a portable zip so users who
+      # don't want the NSIS/MSI installer can just unzip + run. Both exes
+      # MUST live in the same directory — `madistack.exe` launches
+      # `madistack-system-helper.exe` from its own `current_exe().parent()`.
+      - name: Package portable zip
+        shell: pwsh
+        run: |
+          $stage = "dist/MadiStack-${{ github.ref_name }}-portable"
+          New-Item -ItemType Directory -Force -Path $stage | Out-Null
+          Copy-Item target/release/madistack.exe                 $stage/
+          Copy-Item target/release/madistack-system-helper.exe   $stage/
+          Copy-Item README.md                                    $stage/
+          Copy-Item LICENSE                                      $stage/
+          $zip = "dist/MadiStack_${{ github.ref_name }}_x64-portable.zip"
+          Compress-Archive -Path "$stage/*" -DestinationPath $zip -Force
+          Write-Host "Built $zip"
+
+      - name: Upload portable zip to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload ${{ github.ref_name }} "dist/MadiStack_${{ github.ref_name }}_x64-portable.zip" --clobber
