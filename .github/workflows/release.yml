@@ -55,13 +55,14 @@ jobs:
       # `madistack-system-helper.exe` from its own `current_exe().parent()`.
       - name: Package portable zip
         shell: pwsh
+        # Minimal payload: just the two binaries. Docs live on GitHub and
+        # inside the app's About tab — no reason to duplicate them inside
+        # every portable download.
         run: |
           $stage = "dist/MadiStack-${{ github.ref_name }}-portable"
           New-Item -ItemType Directory -Force -Path $stage | Out-Null
           Copy-Item target/release/madistack.exe                 $stage/
           Copy-Item target/release/madistack-system-helper.exe   $stage/
-          Copy-Item README.md                                    $stage/
-          Copy-Item LICENSE                                      $stage/
           $zip = "dist/MadiStack_${{ github.ref_name }}_x64-portable.zip"
           Compress-Archive -Path "$stage/*" -DestinationPath $zip -Force
           Write-Host "Built $zip"
