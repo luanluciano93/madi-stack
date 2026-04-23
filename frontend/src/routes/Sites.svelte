@@ -100,7 +100,7 @@
     <button
       type="button"
       onclick={refresh}
-      class="shrink-0 rounded-md border border-zinc-700 px-3 py-1.5 text-sm text-zinc-200 hover:bg-zinc-800"
+      class="shrink-0 rounded-md bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-500"
     >
       {$_('actions.refresh')}
     </button>
@@ -136,8 +136,9 @@
               type="button"
               onclick={() => openInBrowser(site.hostname, site.ssl)}
               class="rounded-md border border-zinc-700 px-3 py-1.5 text-xs text-zinc-200 hover:bg-zinc-800"
+              title={site.ssl ? `https://${site.hostname}/` : `http://${site.hostname}/`}
             >
-              {$_('actions.open')}
+              localhost
             </button>
             <button
               type="button"
@@ -166,6 +167,14 @@
               {busy === site.name ? $_('sites.activating') : $_('actions.enable')}
             </button>
           {/if}
+          <button
+            type="button"
+            onclick={() => ipc.openPath(site.root_dir)}
+            class="rounded-md border border-zinc-700 px-3 py-1.5 text-xs text-zinc-200 hover:bg-zinc-800"
+            title={site.root_dir}
+          >
+            {$_('sites.root_label')} Dir
+          </button>
         </li>
       {/each}
     </ul>

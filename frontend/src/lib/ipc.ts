@@ -126,13 +126,29 @@ export const ipc = {
     invoke<void>('vhost_enable', { name, https }),
   vhostDisable: (name: string) => invoke<void>('vhost_disable', { name }),
   mkcertStatus: () => invoke<MkcertStatusDto>('mkcert_status'),
+  wwwDir: () => invoke<string>('www_dir'),
+  installDir: () => invoke<string>('install_dir'),
+  serviceConfigPath: (component: ComponentSlug) =>
+    invoke<string | null>('service_config_path', { component }),
+  serviceLogPath: (component: ComponentSlug) =>
+    invoke<string | null>('service_log_path', { component }),
+  servicePid: (component: ComponentSlug) =>
+    invoke<number | null>('service_pid', { component }),
+  openPath: (path: string) => invoke<void>('open_path', { path }),
+  pmaInstallInfo: () => invoke<PmaInstallInfo>('pma_install_info'),
 };
+
+export interface PmaInstallInfo {
+  install_count: number;
+  password: string | null;
+}
 
 export interface VhostDto {
   name: string;
   hostname: string;
   enabled: boolean;
   ssl: boolean;
+  root_dir: string;
 }
 
 export interface MkcertStatusDto {

@@ -95,6 +95,13 @@ fn main() {
             commands::vhost_list,
             commands::vhost_enable,
             commands::vhost_disable,
+            commands::www_dir,
+            commands::install_dir,
+            commands::service_config_path,
+            commands::service_log_path,
+            commands::service_pid,
+            commands::pma_install_info,
+            commands::open_path,
             commands::mkcert_status,
         ])
         .run(tauri::generate_context!())

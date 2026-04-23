@@ -28,6 +28,11 @@ pub struct AppState {
     pub ports: PortConfig,
     #[serde(default)]
     pub prefs: Prefs,
+    /// Incremented on every `install_component(PhpMyAdmin)`. The frontend
+    /// compares this against its own `acked_count` in localStorage to
+    /// decide whether to keep showing the initial-password banner.
+    #[serde(default)]
+    pub pma_install_count: u32,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]

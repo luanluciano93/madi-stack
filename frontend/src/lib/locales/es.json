@@ -9,9 +9,11 @@
     "mariadb": "MariaDB",
     "php": "PHP",
     "sites": "Sitios",
+    "firewall": "Firewall",
     "configuracoes": "Configuración",
     "atualizacoes": "Actualizaciones",
-    "sobre": "Acerca de"
+    "sobre": "Acerca de",
+    "open_install_dir": "Abrir carpeta de MadiStack"
   },
   "actions": {
     "start": "Iniciar",
@@ -39,6 +41,8 @@
   "common": {
     "loading": "Cargando…",
     "running": "en ejecución",
+    "running_on_port": "en ejecución en el puerto {port}",
+    "running_on_port_pid": "en ejecución en el puerto {port} (pid {pid})",
     "stopped": "detenido",
     "crashed": "caído",
     "not_installed": "no instalado",
@@ -67,7 +71,7 @@
     "theme_dark": "Oscuro",
     "theme_light": "Claro",
     "firewall_header": "Firewall de Windows",
-    "firewall_desc": "Reglas de entrada para nginx, MariaDB y php-cgi. Creadas en lote — un único prompt de UAC.",
+    "firewall_desc_html": "<p>Por defecto Windows bloquea conexiones entrantes para ejecutables desconocidos — la primera vez que inicia nginx aparece el típico cuadro \"¿Permitir acceso?\". Si cancela o no aparece nada, otros dispositivos de su red (móvil, otro PC) no podrán acceder a su servidor.</p><p>Este botón crea <strong>reglas permanentes</strong> de entrada en el Firewall de Windows autorizando el tráfico TCP de los tres binarios de MadiStack (<code>nginx.exe</code>, <code>mysqld.exe</code>, <code>php-cgi.exe</code>). Todo en <strong>un único prompt de UAC</strong> — MadiStack no se ejecuta como administrador, solo el helper se eleva y termina.</p><p>Solo necesita pulsar \"Crear / Recrear reglas\" si:</p><ul class='ml-4 list-disc'><li>Quiere acceder a sus sitios <strong>.test</strong> desde otro dispositivo de la misma red (móvil para probar responsive, etc.)</li><li>Configuró <code>Bind address: 0.0.0.0</code> y el servicio no responde externamente</li><li>Reinstaló Windows o limpió las reglas manualmente y quiere restaurarlas</li></ul><p>Para uso puramente local (<code>127.0.0.1</code> / <code>localhost</code>), estas reglas son <strong>innecesarias</strong> — el loopback no pasa por el firewall.</p>",
     "firewall_rule_present": "regla presente",
     "firewall_rule_absent": "ausente",
     "firewall_create": "Crear / Recrear reglas",
@@ -88,6 +92,8 @@
     "active": "activo",
     "active_https": "activo · HTTPS",
     "inactive": "inactivo",
+    "root_label": "Root",
+    "open_folder": "Abrir carpeta",
     "enabled_success": "{hostname} activado",
     "enabled_https_success": "{hostname} activado con HTTPS",
     "disabled_success": "{hostname} desactivado",
@@ -101,7 +107,8 @@
     "unknown_version_tooltip": "Binario presente en bin/, pero MadiStack no registró la versión. Reinstale para sincronizar.",
     "sync_tooltip": "Descarga la versión actual y la registra en MadiStack para habilitar auto-actualización.",
     "syncing": "Sincronizando…",
-    "rollback_tooltip": "Cambiar a bin/{slug}.bak/ (si existe)"
+    "rollback_tooltip": "Cambiar a bin/{slug}.bak/ (si existe)",
+    "empty": "Nada para mostrar todavía."
   },
   "geral": {
     "title": "General",
@@ -110,9 +117,16 @@
     "installing_all": "Descargando…",
     "install_all_failed": "Error al instalar todo: {error}",
     "ping_backend": "ping backend",
+    "open_www": "Abrir carpeta www",
     "pma_served_by_nginx": "servido por nginx",
     "pma_open_tooltip": "Abrir http://localhost:{port}/phpmyadmin/ en el navegador predeterminado",
     "pma_needs_nginx": "Inicie Nginx primero — phpMyAdmin es servido por él",
+    "pma_needs_services": "phpMyAdmin necesita estos servicios en ejecución: {missing}",
+    "pma_mariadb_hint": "phpMyAdmin abrirá, pero el login solo funciona con MariaDB en ejecución",
+    "pma_password_warning": "⚠ Contraseña inicial de MariaDB — cámbiela en el primer login de phpMyAdmin",
+    "pma_user_label": "Usuario",
+    "pma_password_label": "Contraseña",
+    "pma_password_dismiss": "Cambié la contraseña",
     "onboarding_title": "¿Primera vez por aquí?",
     "onboarding_body_html": "Haga clic en <strong>Descargar todo</strong> para obtener nginx, PHP, MariaDB y phpMyAdmin de las fuentes oficiales (el primer uso toma ~2 min). Luego, en cada fila, el botón <strong>Iniciar</strong> levanta el servicio. Coloque sus sitios en subcarpetas de <code>www/</code> y la pestaña <strong>Sitios</strong> convierte cada una en <code>&lt;nombre&gt;.test</code>.",
     "phase_resolving": "Resolviendo…",
@@ -126,11 +140,21 @@
     "logs_title": "Logs",
     "stream_all": "all",
     "stream_stdout": "stdout",
-    "stream_stderr": "stderr"
+    "stream_stderr": "stderr",
+    "open_config": "Abrir configuración",
+    "open_config_tooltip": "Abre {path} en el editor predeterminado de Windows",
+    "open_log": "Abrir archivo de log",
+    "open_log_tooltip": "Abre {path} en el editor predeterminado de Windows"
+  },
+  "events": {
+    "title": "Eventos",
+    "empty": "Aún no hay eventos.",
+    "expand": "Expandir panel de eventos",
+    "collapse": "Contraer panel de eventos"
   },
   "about": {
     "title": "Acerca de",
-    "description": "alternativa moderna y de código abierto al USBWebserver para Windows, construida con Rust + Tauri.",
+    "description": "es una stack web portátil para Windows. Descarga, configura y mantiene actualizados Nginx, MariaDB, PHP y phpMyAdmin desde las fuentes oficiales, con interfaz nativa construida con Rust + Tauri. Cada subcarpeta de <code>www/</code> se convierte automáticamente en un sitio servido en <code>&lt;nombre&gt;.test</code>, con HTTPS local vía mkcert y gestión del Firewall de Windows integrada. Todo se ejecuta desde la carpeta del ejecutable — sin instalación en el registro, sin servicios residentes, funciona incluso desde un pendrive.",
     "version_label": "Versión",
     "license": "Licencia",
     "author": "Autor",

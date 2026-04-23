@@ -9,9 +9,11 @@
     "mariadb": "MariaDB",
     "php": "PHP",
     "sites": "Sites",
+    "firewall": "Firewall",
     "configuracoes": "Settings",
     "atualizacoes": "Updates",
-    "sobre": "About"
+    "sobre": "About",
+    "open_install_dir": "Open MadiStack folder"
   },
   "actions": {
     "start": "Start",
@@ -39,6 +41,8 @@
   "common": {
     "loading": "Loading…",
     "running": "running",
+    "running_on_port": "running on port {port}",
+    "running_on_port_pid": "running on port {port} (pid {pid})",
     "stopped": "stopped",
     "crashed": "crashed",
     "not_installed": "not installed",
@@ -67,7 +71,7 @@
     "theme_dark": "Dark",
     "theme_light": "Light",
     "firewall_header": "Windows Firewall",
-    "firewall_desc": "Inbound rules for nginx, MariaDB and php-cgi. Batched into a single UAC prompt.",
+    "firewall_desc_html": "<p>By default Windows blocks incoming connections for unknown executables — the first time you start nginx you usually see the \"Allow access?\" popup. If you click <em>Cancel</em> or nothing prompts, other devices on your LAN (phone, another PC) won't reach your server.</p><p>This button creates <strong>permanent inbound rules</strong> in Windows Firewall authorizing TCP traffic for the three MadiStack binaries (<code>nginx.exe</code>, <code>mysqld.exe</code>, <code>php-cgi.exe</code>). Everything is done in <strong>a single UAC prompt</strong> — MadiStack doesn't stay elevated, only the helper runs as admin and exits.</p><p>You only need to click \"Create / Recreate rules\" if:</p><ul class='ml-4 list-disc'><li>You want to reach your <strong>.test</strong> sites from another device on the same network (phone for responsive testing, etc.)</li><li>You set <code>Bind address: 0.0.0.0</code> and the service doesn't respond externally</li><li>You reinstalled Windows or cleared the rules manually and want them back</li></ul><p>For local-only use (<code>127.0.0.1</code> / <code>localhost</code>), these rules are <strong>unnecessary</strong> — loopback traffic doesn't pass through the firewall.</p>",
     "firewall_rule_present": "rule present",
     "firewall_rule_absent": "absent",
     "firewall_create": "Create / Recreate rules",
@@ -88,6 +92,8 @@
     "active": "active",
     "active_https": "active · HTTPS",
     "inactive": "inactive",
+    "root_label": "Root",
+    "open_folder": "Open folder",
     "enabled_success": "{hostname} enabled",
     "enabled_https_success": "{hostname} enabled with HTTPS",
     "disabled_success": "{hostname} disabled",
@@ -101,7 +107,8 @@
     "unknown_version_tooltip": "Binary present in bin/, but MadiStack didn't record the version. Reinstall to sync.",
     "sync_tooltip": "Downloads the current version and registers it in MadiStack to enable auto-update.",
     "syncing": "Syncing…",
-    "rollback_tooltip": "Switch to bin/{slug}.bak/ (if it exists)"
+    "rollback_tooltip": "Switch to bin/{slug}.bak/ (if it exists)",
+    "empty": "Nothing to show yet."
   },
   "geral": {
     "title": "General",
@@ -110,9 +117,16 @@
     "installing_all": "Downloading…",
     "install_all_failed": "Failed to install all: {error}",
     "ping_backend": "ping backend",
+    "open_www": "Open www folder",
     "pma_served_by_nginx": "served by nginx",
     "pma_open_tooltip": "Open http://localhost:{port}/phpmyadmin/ in the default browser",
     "pma_needs_nginx": "Start Nginx first — phpMyAdmin is served by it",
+    "pma_needs_services": "phpMyAdmin needs these services running: {missing}",
+    "pma_mariadb_hint": "phpMyAdmin will open, but login only works with MariaDB running",
+    "pma_password_warning": "⚠ Initial MariaDB password — change it on your first phpMyAdmin login",
+    "pma_user_label": "User",
+    "pma_password_label": "Password",
+    "pma_password_dismiss": "I changed the password",
     "onboarding_title": "First time here?",
     "onboarding_body_html": "Click <strong>Download all</strong> to fetch nginx, PHP, MariaDB and phpMyAdmin from official sources (first run takes ~2 min). Then, on each row, <strong>Start</strong> brings the service up. Put your sites in subfolders of <code>www/</code> and the <strong>Sites</strong> tab turns each one into <code>&lt;name&gt;.test</code>.",
     "phase_resolving": "Resolving…",
@@ -126,11 +140,21 @@
     "logs_title": "Logs",
     "stream_all": "all",
     "stream_stdout": "stdout",
-    "stream_stderr": "stderr"
+    "stream_stderr": "stderr",
+    "open_config": "Open config",
+    "open_config_tooltip": "Opens {path} in the default Windows editor",
+    "open_log": "Open log file",
+    "open_log_tooltip": "Opens {path} in the default Windows editor"
+  },
+  "events": {
+    "title": "Events",
+    "empty": "No events yet.",
+    "expand": "Expand events panel",
+    "collapse": "Collapse events panel"
   },
   "about": {
     "title": "About",
-    "description": "modern, open-source alternative to USBWebserver for Windows, built with Rust + Tauri.",
+    "description": "is a portable web stack for Windows. It downloads, configures and keeps Nginx, MariaDB, PHP and phpMyAdmin up-to-date from official sources, wrapped in a native GUI built with Rust + Tauri. Every subfolder of <code>www/</code> becomes a site served at <code>&lt;name&gt;.test</code>, with local HTTPS via mkcert and integrated Windows Firewall management. Everything runs from the executable's folder — no registry install, no resident services, works from a USB drive.",
     "version_label": "Version",
     "license": "License",
     "author": "Author",

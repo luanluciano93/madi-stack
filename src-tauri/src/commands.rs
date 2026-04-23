@@ -171,6 +171,114 @@ pub fn service_status(
     Ok(state.supervisor.status(c))
 }
 
+/// Return the OS PID of a running service, or `None` when it isn't running.
+/// The UI polls this once when the status flips to `running` — cheap, just
+/// reads the supervisor's tracking map.
+#[tauri::command]
+pub fn service_pid(
+    component: String,
+    state: tauri::State<'_, AppState>,
+) -> Result<Option<u32>, String> {
+    let c = parse_component(&component)?;
+    Ok(state.supervisor.pid(c))
+}
+
+/// Return the primary on-disk log file for a component, if the service
+/// writes one. Only Nginx (`logs/nginx/error.log`) and MariaDB
+/// (`logs/mariadb/*.err`) produce files — PHP-CGI streams directly to
+/// our in-memory LogBuffer, and phpMyAdmin has no process.
+#[tauri::command]
+pub fn service_log_path(
+    component: String,
+    state: tauri::State<'_, AppState>,
+) -> Result<Option<String>, String> {
+    let c = parse_component(&component)?;
+    let logs = state.supervisor.install_dir().join("logs");
+    let path = match c {
+        Component::Nginx => {
+            // Prefer the actual log file, but fall back to the log directory
+            // when it's missing. Happens either on a fresh install (nginx
+            // never ran) or when the user cleared `logs/`. Opening the
+            // folder still lets them browse `access.log` if error.log is
+            // empty.
+            let dir = logs.join("nginx");
+            let err = dir.join("error.log");
+            if err.is_file() {
+                Some(err)
+            } else if dir.is_dir() {
+                Some(dir)
+            } else {
+                None
+            }
+        }
+        Component::MariaDb => {
+            // mysqld writes `<hostname>.err` — find the first `.err` file in
+            // the mariadb log dir so the UI works regardless of hostname.
+            let dir = logs.join("mariadb");
+            std::fs::read_dir(&dir)
+                .ok()
+                .and_then(|mut rd| {
+                    rd.find_map(|e| {
+                        let entry = e.ok()?;
+                        let path = entry.path();
+                        if path
+                            .extension()
+                            .is_some_and(|ext| ext.eq_ignore_ascii_case("err"))
+                        {
+                            Some(path)
+                        } else {
+                            None
+                        }
+                    })
+                })
+                .or(Some(dir))
+        }
+        Component::Php | Component::PhpMyAdmin => None,
+    };
+    Ok(path.map(|p| p.to_string_lossy().into_owned()))
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct PmaInstallInfo {
+    /// Monotonically-incremented install counter from `madistack.toml`.
+    /// The frontend compares this to its own `acked_count` in localStorage
+    /// to decide whether to show the "initial password" banner again
+    /// after a reinstall.
+    pub install_count: u32,
+    /// MariaDB root password from `madistack-secrets.toml`, or `None` if
+    /// the data dir was never bootstrapped yet.
+    pub password: Option<String>,
+}
+
+/// Info the Geral tab needs to render the pma "change your password"
+/// warning: the current install counter and the generated root password.
+/// Returns an empty password when no secrets file exists yet — the UI
+/// falls back to a neutral "password not set" message in that case.
+#[tauri::command]
+pub fn pma_install_info(state: tauri::State<'_, AppState>) -> PmaInstallInfo {
+    let install_count = state.stored.read().pma_install_count;
+    let password = madi_services::secrets::load(state.supervisor.install_dir())
+        .ok()
+        .flatten()
+        .map(|s| s.mariadb_root_password)
+        .filter(|p| !p.is_empty());
+    PmaInstallInfo {
+        install_count,
+        password,
+    }
+}
+
+/// Return the absolute install directory (where `madistack.exe` lives).
+/// Used by the "Abrir pasta" button in the sidebar.
+#[tauri::command]
+pub fn install_dir(state: tauri::State<'_, AppState>) -> String {
+    state
+        .supervisor
+        .install_dir()
+        .to_string_lossy()
+        .into_owned()
+}
+
 fn parse_component(slug: &str) -> Result<Component, String> {
     Component::all()
         .iter()
@@ -667,9 +775,69 @@ pub struct VhostDto {
     /// `enabled`: a site can be disabled but keep its cert so re-enabling
     /// with HTTPS is instant.
     pub ssl: bool,
+    /// Absolute filesystem path of the site's document root. Shown in the
+    /// UI as "Root: ..." so the user can locate/copy it quickly.
+    pub root_dir: String,
 }
 
 const VHOST_TAG_PREFIX: &str = "vhost:";
+
+/// Return the absolute path of the default document root (`install/www/`).
+/// Used by the UI (Geral tab) to show where sites without a vhost are served
+/// from. Always safe to call, even before `www/` has been created.
+#[tauri::command]
+pub fn www_dir(state: tauri::State<'_, AppState>) -> String {
+    state
+        .supervisor
+        .install_dir()
+        .join("www")
+        .to_string_lossy()
+        .into_owned()
+}
+
+/// Open a filesystem path with the OS default handler. On Windows we shell
+/// out to `cmd /c start "" "<path>"` — this respects file associations
+/// (Notepad for `.ini`/`.conf`, Explorer for folders) and works regardless
+/// of the Tauri shell plugin's URL-only scope validator.
+#[tauri::command]
+pub fn open_path(path: String) -> Result<(), String> {
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+        std::process::Command::new("cmd")
+            .args(["/c", "start", "", &path])
+            .creation_flags(CREATE_NO_WINDOW)
+            .spawn()
+            .map_err(|e| format!("falha ao abrir {path}: {e}"))?;
+        Ok(())
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = path;
+        Err("open_path só funciona no Windows".into())
+    }
+}
+
+/// Resolve the primary on-disk config file for a component. Returns `None`
+/// for components that don't have a single editable config (phpMyAdmin's
+/// `config.inc.php` is regenerated on every save — users shouldn't edit it
+/// by hand).
+#[tauri::command]
+pub fn service_config_path(
+    component: String,
+    state: tauri::State<'_, AppState>,
+) -> Result<Option<String>, String> {
+    let c = parse_component(&component)?;
+    let config = state.supervisor.install_dir().join("config");
+    let path = match c {
+        Component::Nginx => Some(config.join("nginx.conf")),
+        Component::Php => Some(config.join("php.ini")),
+        Component::MariaDb => Some(config.join("my.ini")),
+        Component::PhpMyAdmin => None,
+    };
+    Ok(path.map(|p| p.to_string_lossy().into_owned()))
+}
 
 /// Accept only ASCII alphanumerics, hyphen and underscore so the name is
 /// safe as both a filename segment and a DNS label.
@@ -726,6 +894,7 @@ pub fn vhost_list(state: tauri::State<'_, AppState>) -> Vec<VhostDto> {
             hostname: format!("{name}.test"),
             enabled,
             ssl,
+            root_dir: entry.path().to_string_lossy().into_owned(),
         });
     }
     out.sort_by(|a, b| a.name.cmp(&b.name));

@@ -127,7 +127,7 @@
       type="button"
       onclick={check}
       disabled={checking}
-      class="shrink-0 rounded-md border border-zinc-700 px-3 py-1.5 text-sm text-zinc-200 hover:bg-zinc-800 disabled:opacity-40"
+      class="shrink-0 rounded-md bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-40"
     >
       {checking ? $_('actions.updating') : $_('actions.check_for_updates')}
     </button>
@@ -137,8 +137,16 @@
     <p class="text-sm text-red-400">{error}</p>
   {/if}
 
-  {#if rows.length === 0 && !checking && !error}
-    <p class="text-sm text-zinc-500">Nada a mostrar ainda.</p>
+  {#if checking && rows.length === 0}
+    <div class="flex min-h-[240px] flex-col items-center justify-center gap-3 text-zinc-400">
+      <span
+        class="inline-block h-8 w-8 animate-spin rounded-full border-2 border-zinc-700 border-t-brand-500"
+        aria-hidden="true"
+      ></span>
+      <p class="text-sm">{$_('common.loading')}</p>
+    </div>
+  {:else if rows.length === 0 && !error}
+    <p class="text-sm text-zinc-500">{$_('updates.empty')}</p>
   {/if}
 
   <div class="space-y-2">

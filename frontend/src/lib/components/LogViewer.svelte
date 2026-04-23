@@ -68,6 +68,19 @@
       '.' + String(d.getMilliseconds()).padStart(3, '0');
   }
 
+  /// Decide whether a log line should be painted red. Many services (nginx,
+  /// mysqld, php) emit *notices* and *warnings* to stderr — colouring by
+  /// stream alone turns the whole log red and trains the user to ignore it.
+  /// Instead we look at common level markers inside the text itself.
+  const ERROR_RE = /\b(error|fatal|panic|\[err\]|\[ERROR\]|\[FATAL\])\b/i;
+  const WARN_RE = /\b(warn(ing)?|\[WARN\]|\[Warning\])\b/i;
+
+  function severityClass(text: string): string {
+    if (ERROR_RE.test(text)) return 'text-red-300';
+    if (WARN_RE.test(text)) return 'text-amber-300';
+    return 'text-zinc-300';
+  }
+
   let copied = $state(false);
 
   async function copyAll() {
@@ -153,11 +166,7 @@
       <p class="text-zinc-600">{$_('common.empty_logs')}</p>
     {/if}
     {#each visible as line (line.seq)}
-      <div
-        class={`flex gap-2 ${
-          line.stream === 'stderr' ? 'text-red-300' : 'text-zinc-300'
-        }`}
-      >
+      <div class="flex gap-2 {severityClass(line.text)}">
         <span class="shrink-0 text-zinc-600">{fmtTs(line.ts_ms)}</span>
         <span class="break-all whitespace-pre-wrap">{line.text}</span>
       </div>

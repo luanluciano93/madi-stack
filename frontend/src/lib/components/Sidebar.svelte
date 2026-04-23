@@ -1,6 +1,18 @@
 <script lang="ts">
   import { _ } from 'svelte-i18n';
+  import { ipc } from '$lib/ipc';
   import logoUrl from '../../assets/logo.png';
+
+  /// Open the install directory (where `madistack.exe` lives) in Explorer.
+  /// Lazy `await` — the backend path doesn't change at runtime.
+  async function openInstallDir() {
+    try {
+      const dir = await ipc.installDir();
+      await ipc.openPath(dir);
+    } catch {
+      // Best-effort — an error here would be rare (spawn failure).
+    }
+  }
 
   let { active = $bindable() } = $props<{
     active:
@@ -9,6 +21,7 @@
       | 'mariadb'
       | 'php'
       | 'sites'
+      | 'firewall'
       | 'configuracoes'
       | 'atualizacoes'
       | 'sobre';
@@ -22,6 +35,7 @@
     { id: 'mariadb', icon: '◑' },
     { id: 'php', icon: '◉' },
     { id: 'sites', icon: '◇' },
+    { id: 'firewall', icon: '🛡' },
     { id: 'configuracoes', icon: '⚙' },
     { id: 'atualizacoes', icon: '↻' },
     { id: 'sobre', icon: 'ⓘ' },
@@ -44,7 +58,7 @@
     </div>
   </div>
 
-  <nav class="flex flex-col gap-0.5 px-2">
+  <nav class="flex flex-1 flex-col gap-0.5 px-2">
     {#each tabs as tab}
       {@const label = $_(`nav.${tab.id}`)}
       <button
@@ -60,4 +74,18 @@
       </button>
     {/each}
   </nav>
+
+  <!-- Footer action: open the install folder in Explorer. Stays pinned to
+       the bottom of the sidebar regardless of how many nav tabs there are. -->
+  <div class="mt-2 px-2">
+    <button
+      type="button"
+      onclick={openInstallDir}
+      title={$_('nav.open_install_dir')}
+      class="flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-white"
+    >
+      <span class="w-4 shrink-0 text-center text-zinc-500">📂</span>
+      <span class="hidden truncate sm:inline">{$_('nav.open_install_dir')}</span>
+    </button>
+  </div>
 </aside>

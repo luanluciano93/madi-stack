@@ -31,27 +31,45 @@ fn stage_system_helper_sidecar() {
 
     println!("cargo:rerun-if-changed={}", src.display());
 
-    if !src.is_file() {
-        println!(
-            "cargo:warning=madistack-system-helper not found at {}. Run \
-             `cargo build --profile {} -p madistack-system-helper` before \
-             `cargo tauri build` to include it in the bundle.",
-            src.display(),
-            profile
-        );
-        return;
-    }
-
     let dst_dir = PathBuf::from("binaries");
     if let Err(e) = fs::create_dir_all(&dst_dir) {
         println!("cargo:warning=could not create {}: {e}", dst_dir.display());
         return;
     }
     let dst = dst_dir.join(format!("madistack-system-helper-{target}.exe"));
-    if let Err(e) = fs::copy(&src, &dst) {
+
+    if src.is_file() {
+        if let Err(e) = fs::copy(&src, &dst) {
+            println!(
+                "cargo:warning=failed to stage sidecar at {}: {e}",
+                dst.display()
+            );
+        }
+        return;
+    }
+
+    // Helper not built yet — happens during `cargo clippy`/`cargo check` in
+    // CI before the helper is compiled. Tauri's `externalBin` validator
+    // insists the file exists at build time, otherwise the build fails with
+    // "resource path ... doesn't exist". Drop a harmless placeholder so
+    // the workspace still compiles; real bundles (`cargo tauri build` after
+    // `cargo build --release -p madistack-system-helper`) overwrite it
+    // with the actual binary. The placeholder is never executed.
+    if !dst.is_file() {
+        if let Err(e) = fs::write(&dst, b"placeholder\n") {
+            println!(
+                "cargo:warning=could not create sidecar placeholder at {}: {e}",
+                dst.display()
+            );
+            return;
+        }
         println!(
-            "cargo:warning=failed to stage sidecar at {}: {e}",
-            dst.display()
+            "cargo:warning=madistack-system-helper not built yet — staged a \
+             placeholder at {}. Run `cargo build --profile {} -p \
+             madistack-system-helper` before `cargo tauri build` for a real \
+             bundle.",
+            dst.display(),
+            profile
         );
     }
 }

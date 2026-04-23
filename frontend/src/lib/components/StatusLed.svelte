@@ -4,7 +4,7 @@
   const color = $derived.by(() => {
     switch (status) {
       case 'running':
-        return 'bg-emerald-500 shadow-emerald-500/50';
+        return 'bg-brand-500 shadow-brand-500/50';
       case 'starting':
         return 'bg-amber-400 shadow-amber-400/50 animate-pulse';
       case 'crashed':

@@ -178,16 +178,7 @@ pub async fn install_component(
         }
     }
 
-    // Record the installed version so the updater has a baseline to diff
-    // against. Saves inline under the shared state lock — failure here is
-    // non-fatal: the binary is on disk regardless of whether we persisted.
-    if let Some(app_state) = app.try_state::<AppState>() {
-        let mut stored = app_state.stored.write();
-        stored.installed.insert(component, info.version.clone());
-        if let Err(e) = madi_state_store::save(&state_file_path(install_dir), &stored) {
-            tracing::warn!(error = %e, "install: failed to persist installed version");
-        }
-    }
+    persist_install(app, install_dir, component, &info.version);
 
     emit(
         app,
@@ -205,6 +196,31 @@ pub async fn install_component(
 
 fn state_file_path(install_dir: &Path) -> PathBuf {
     install_dir.join("madistack.toml")
+}
+
+/// Persist the installed version + bump the pma install counter. Lifted
+/// out of `install_component` so the latter stays under the clippy
+/// `too_many_lines` threshold.
+fn persist_install(
+    app: &AppHandle,
+    install_dir: &Path,
+    component: Component,
+    version: &semver::Version,
+) {
+    let Some(app_state) = app.try_state::<AppState>() else {
+        return;
+    };
+    let mut stored = app_state.stored.write();
+    stored.installed.insert(component, version.clone());
+    // Bump on every (re)install of pma so the UI re-shows the "here's
+    // your initial password" banner. Counter (not bool) keeps the trigger
+    // reliable across dismiss → reinstall → dismiss cycles.
+    if component == Component::PhpMyAdmin {
+        stored.pma_install_count = stored.pma_install_count.saturating_add(1);
+    }
+    if let Err(e) = madi_state_store::save(&state_file_path(install_dir), &stored) {
+        tracing::warn!(error = %e, "install: failed to persist installed version");
+    }
 }
 
 /// Render nginx.conf + php.ini + my.ini + site-default.conf into `config/`.

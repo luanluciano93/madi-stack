@@ -16,8 +16,8 @@
     <h2 class="text-2xl font-semibold">{$_('about.title')}</h2>
   </header>
 
-  <p class="max-w-xl text-sm text-zinc-300">
-    <strong>MadiStack</strong> — {$_('about.description')}
+  <p class="max-w-xl text-sm leading-relaxed text-zinc-300 [&_code]:rounded [&_code]:bg-zinc-800 [&_code]:px-1 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-xs [&_code]:text-zinc-200">
+    <strong>MadiStack</strong> {@html $_('about.description')}
   </p>
 
   <dl class="grid max-w-md grid-cols-[auto_1fr] gap-x-6 gap-y-1 text-sm">
@@ -30,7 +30,7 @@
       <button
         type="button"
         onclick={() => openExternal(authorUrl)}
-        class="text-brand-400 underline-offset-2 hover:underline"
+        class="underline underline-offset-2 hover:text-brand-400"
       >
         luanluciano93
       </button>
@@ -40,7 +40,7 @@
       <button
         type="button"
         onclick={() => openExternal(repoUrl)}
-        class="font-mono text-brand-400 underline-offset-2 hover:underline"
+        class="font-mono underline underline-offset-2 hover:text-brand-400"
       >
         github.com/luanluciano93/MadiStack
       </button>

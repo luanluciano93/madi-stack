@@ -248,6 +248,13 @@ mod imp {
             }
         }
 
+        /// Return the OS PID of the running child, or `None` if the component
+        /// isn't running. Does not probe — just reads the tracking map, so
+        /// it's cheap to poll from the UI.
+        pub fn pid(&self, component: Component) -> Option<u32> {
+            self.running.lock().get(&component).map(|r| r.pid)
+        }
+
         pub async fn stop_all(&self) {
             let components: Vec<Component> = self.running.lock().keys().copied().collect();
             for c in components {
@@ -748,6 +755,10 @@ mod imp {
 
         pub fn status(&self, _component: Component) -> madi_core::ServiceStatus {
             madi_core::ServiceStatus::Stopped
+        }
+
+        pub fn pid(&self, _component: Component) -> Option<u32> {
+            None
         }
 
         pub async fn stop_all(&self) {}

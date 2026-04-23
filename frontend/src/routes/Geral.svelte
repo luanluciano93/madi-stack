@@ -25,6 +25,7 @@
   type Row = {
     info: ComponentInfo;
     status: ServiceStatus;
+    pid: number | null;
     busy: boolean;
     error: string | null;
     installed: boolean;
@@ -36,6 +37,71 @@
   let installingAll = $state(false);
   let installError = $state<string | null>(null);
   let httpPort = $state(80);
+  let mariadbPort = $state(3306);
+  let phpFcgiPort = $state(9000);
+  let wwwPath = $state<string | null>(null);
+
+  // Initial-password warning for phpMyAdmin. The banner is visible while
+  // the backend's install counter is higher than the last value the user
+  // acknowledged (stored in localStorage, so "changed password" persists
+  // across reloads but resets on every reinstall).
+  const PMA_ACK_KEY = 'madistack.pma_acked_count';
+  let pmaInstallCount = $state(0);
+  let pmaPassword = $state<string | null>(null);
+  let pmaAckedCount = $state(0);
+  let pmaPasswordCopied = $state(false);
+
+  function loadPmaAcked() {
+    try {
+      const raw = localStorage.getItem(PMA_ACK_KEY);
+      pmaAckedCount = raw ? Number.parseInt(raw, 10) || 0 : 0;
+    } catch {
+      pmaAckedCount = 0;
+    }
+  }
+
+  async function refreshPmaInfo() {
+    try {
+      const info = await ipc.pmaInstallInfo();
+      pmaInstallCount = info.install_count;
+      pmaPassword = info.password;
+    } catch {
+      // Backend not ready — keep existing values
+    }
+  }
+
+  function dismissPmaWarning() {
+    pmaAckedCount = pmaInstallCount;
+    try {
+      localStorage.setItem(PMA_ACK_KEY, String(pmaInstallCount));
+    } catch {
+      // storage blocked — dismissal is session-only
+    }
+  }
+
+  async function copyPmaPassword() {
+    if (!pmaPassword) return;
+    try {
+      await navigator.clipboard.writeText(pmaPassword);
+      pmaPasswordCopied = true;
+      setTimeout(() => (pmaPasswordCopied = false), 1500);
+    } catch {
+      // clipboard blocked — users can still select manually
+    }
+  }
+
+  function portFor(slug: ComponentSlug): number | null {
+    switch (slug) {
+      case 'nginx':
+        return httpPort;
+      case 'mariadb':
+        return mariadbPort;
+      case 'php':
+        return phpFcgiPort;
+      default:
+        return null;
+    }
+  }
   let unlistenStatus: UnlistenFn | null = null;
   let unlistenInstall: UnlistenFn | null = null;
 
@@ -67,7 +133,19 @@
 
   function applyStatus(slug: ComponentSlug, status: ServiceStatus) {
     const i = rows.findIndex((r) => r.info.slug === slug);
-    if (i >= 0) rows[i].status = status;
+    if (i >= 0) {
+      rows[i].status = status;
+      // PID only meaningful while running; null otherwise.
+      void refreshPid(i);
+    }
+  }
+
+  async function refreshPid(i: number) {
+    try {
+      rows[i].pid = await ipc.servicePid(rows[i].info.slug);
+    } catch {
+      rows[i].pid = null;
+    }
   }
 
   async function hydrateInitialStatus() {
@@ -76,6 +154,7 @@
         if (r.info.slug === 'phpmyadmin') return;
         try {
           rows[i].status = await ipc.serviceStatus(r.info.slug);
+          rows[i].pid = await ipc.servicePid(r.info.slug);
         } catch {
           // status is infallible on the Rust side for known slugs
         }
@@ -131,6 +210,11 @@
     rows[i].install = next;
     if (next.phase === 'done') {
       rows[i].installed = true;
+      // Re-fetch pma install info so the password banner shows again after
+      // a reinstall without waiting for a manual refresh.
+      if (slug === 'phpmyadmin') {
+        void refreshPmaInfo();
+      }
     }
   }
 
@@ -192,10 +276,13 @@
 
   onMount(async () => {
     loadOnboarding();
+    loadPmaAcked();
+    void refreshPmaInfo();
     const infos = await ipc.listComponents();
     rows = infos.map((info) => ({
       info,
       status: 'stopped',
+      pid: null,
       busy: false,
       error: null,
       installed: false,
@@ -206,8 +293,15 @@
     try {
       const cfg = await ipc.getConfig();
       httpPort = cfg.ports.http;
+      mariadbPort = cfg.ports.mariadb;
+      phpFcgiPort = cfg.ports.php_fcgi;
     } catch {
-      // keep default — the "Abrir" button falls back to :80
+      // keep defaults — the status label falls back to "em execução"
+    }
+    try {
+      wwwPath = await ipc.wwwDir();
+    } catch {
+      wwwPath = null;
     }
     unlistenStatus = await onServiceStatus((evt) => applyStatus(evt.slug, evt.status));
     unlistenInstall = await onInstallProgress((evt) =>
@@ -292,6 +386,10 @@
                 {$_('common.not_installed')}
               {:else if isPma}
                 {$_('geral.pma_served_by_nginx')}
+              {:else if row.status === 'running' && portFor(row.info.slug) !== null && row.pid !== null}
+                {$_('common.running_on_port_pid', { values: { port: portFor(row.info.slug), pid: row.pid } })}
+              {:else if row.status === 'running' && portFor(row.info.slug) !== null}
+                {$_('common.running_on_port', { values: { port: portFor(row.info.slug) } })}
               {:else}
                 {$_(`common.${row.status === 'starting' || row.status === 'stopping' ? 'running' : row.status}`)}
               {/if}
@@ -312,14 +410,25 @@
           {:else if isPma}
             {@const nginxRunning =
               rows.find((r) => r.info.slug === 'nginx')?.status === 'running'}
+            {@const phpRunning =
+              rows.find((r) => r.info.slug === 'php')?.status === 'running'}
+            {@const mariadbRunning =
+              rows.find((r) => r.info.slug === 'mariadb')?.status === 'running'}
+            {@const missingRequired = [
+              !nginxRunning ? 'Nginx' : null,
+              !phpRunning ? 'PHP' : null,
+            ].filter((s): s is string => s !== null)}
+            {@const canOpen = missingRequired.length === 0}
             <button
               type="button"
               onclick={openPhpMyAdmin}
-              disabled={!nginxRunning}
+              disabled={!canOpen}
               class="rounded-md bg-brand-600 px-3 py-1.5 text-sm text-white hover:bg-brand-500 disabled:opacity-40 disabled:cursor-not-allowed"
-              title={nginxRunning
-                ? $_('geral.pma_open_tooltip', { values: { port: httpPort } })
-                : $_('geral.pma_needs_nginx')}
+              title={canOpen
+                ? mariadbRunning
+                  ? $_('geral.pma_open_tooltip', { values: { port: httpPort } })
+                  : $_('geral.pma_mariadb_hint')
+                : $_('geral.pma_needs_services', { values: { missing: missingRequired.join(', ') } })}
             >
               {$_('actions.open')}
             </button>
@@ -362,11 +471,45 @@
             {/if}
           </div>
         {/if}
+
+        <!-- Initial-password banner: stays visible for phpMyAdmin until the
+             user clicks "Troquei a senha". Re-appears on every reinstall
+             because pmaInstallCount bumps and the acked counter falls behind. -->
+        {#if isPma && pmaInstallCount > pmaAckedCount && pmaPassword}
+          <div class="rounded-md border border-red-500/50 bg-red-500/10 p-3 text-sm">
+            <p class="mb-2 font-medium text-red-300">
+              {$_('geral.pma_password_warning')}
+            </p>
+            <div class="mb-2 flex flex-wrap items-center gap-2 text-xs text-zinc-200">
+              <span>{$_('geral.pma_user_label')}:</span>
+              <code class="rounded bg-zinc-950 px-2 py-0.5 font-mono text-zinc-100">root</code>
+              <span>{$_('geral.pma_password_label')}:</span>
+              <button
+                type="button"
+                onclick={copyPmaPassword}
+                class="rounded bg-zinc-950 px-2 py-0.5 font-mono text-zinc-100 hover:bg-zinc-900"
+                title={$_('actions.copy')}
+              >
+                {pmaPassword}
+              </button>
+              {#if pmaPasswordCopied}
+                <span class="text-emerald-400">{$_('actions.copied')}</span>
+              {/if}
+            </div>
+            <button
+              type="button"
+              onclick={dismissPmaWarning}
+              class="rounded-md border border-red-500/60 px-3 py-1 text-xs font-medium text-red-200 hover:bg-red-500/20"
+            >
+              {$_('geral.pma_password_dismiss')}
+            </button>
+          </div>
+        {/if}
       </div>
     {/each}
   </div>
 
-  <div class="rounded-lg border border-zinc-800 bg-zinc-900/60 p-4">
+  <div class="flex flex-wrap items-center gap-3 rounded-lg border border-zinc-800 bg-zinc-900/60 p-4">
     <button
       type="button"
       onclick={pingBackend}
@@ -374,8 +517,18 @@
     >
       {$_('geral.ping_backend')}
     </button>
+    {#if wwwPath}
+      <button
+        type="button"
+        onclick={() => ipc.openPath(wwwPath!)}
+        class="rounded-md bg-brand-600 px-3 py-1.5 text-sm text-white hover:bg-brand-500"
+        title={wwwPath}
+      >
+        {$_('geral.open_www')}
+      </button>
+    {/if}
     {#if reply}
-      <span class="ml-3 font-mono text-sm text-emerald-400">{reply}</span>
+      <span class="font-mono text-sm text-emerald-400">{reply}</span>
     {/if}
   </div>
 </section>

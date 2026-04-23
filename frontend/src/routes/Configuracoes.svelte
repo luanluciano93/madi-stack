@@ -7,7 +7,6 @@
   import {
     ipc,
     type AppConfigDto,
-    type FirewallRulesStatus,
     type PortInspection,
   } from '$lib/ipc';
 
@@ -28,58 +27,6 @@
   let saved = $state(false);
   let error = $state<string | null>(null);
   let inspections = $state<Record<string, PortInspection>>({});
-
-  let fwStatus = $state<FirewallRulesStatus | null>(null);
-  let fwBusy = $state(false);
-  let fwError = $state<string | null>(null);
-  let fwSuccess = $state<string | null>(null);
-
-  async function refreshFirewall() {
-    try {
-      fwStatus = await ipc.firewallRulesStatus();
-    } catch (e) {
-      fwError = String(e);
-    }
-  }
-
-  function flashSuccess(msg: string) {
-    fwSuccess = msg;
-    // Clear the flash after a few seconds so the message doesn't stick
-    // around forever — long enough to read, short enough not to clutter.
-    setTimeout(() => {
-      if (fwSuccess === msg) fwSuccess = null;
-    }, 4000);
-  }
-
-  async function ensureFirewall() {
-    fwBusy = true;
-    fwError = null;
-    fwSuccess = null;
-    try {
-      await ipc.firewallEnsureRules();
-      await refreshFirewall();
-      flashSuccess(get(_)('config.firewall_applied'));
-    } catch (e) {
-      fwError = String(e);
-    } finally {
-      fwBusy = false;
-    }
-  }
-
-  async function removeFirewall() {
-    fwBusy = true;
-    fwError = null;
-    fwSuccess = null;
-    try {
-      await ipc.firewallRemoveRules();
-      await refreshFirewall();
-      flashSuccess(get(_)('config.firewall_removed'));
-    } catch (e) {
-      fwError = String(e);
-    } finally {
-      fwBusy = false;
-    }
-  }
 
   async function refreshPort(key: 'http' | 'mariadb' | 'php_fcgi', value: number) {
     if (!Number.isFinite(value) || value <= 0 || value > 65535) return;
@@ -108,7 +55,6 @@
     } finally {
       loading = false;
     }
-    await refreshFirewall();
   });
 
   async function save() {
@@ -281,53 +227,5 @@
       {/if}
     </div>
 
-    <fieldset class="max-w-md space-y-3 text-sm">
-      <legend class="mb-2 text-zinc-400">{$_('config.firewall_header')}</legend>
-      <p class="text-xs text-zinc-500">{$_('config.firewall_desc')}</p>
-      <ul class="space-y-1">
-        {#each [
-          { key: 'nginx', label: 'Nginx' },
-          { key: 'mariadb', label: 'MariaDB' },
-          { key: 'php_fcgi', label: 'PHP FastCGI' },
-        ] as row (row.key)}
-          {@const present = fwStatus?.[row.key as keyof FirewallRulesStatus] ?? false}
-          <li class="flex items-center gap-2">
-            <span
-              class="inline-block h-2 w-2 rounded-full {present
-                ? 'bg-emerald-400'
-                : 'bg-zinc-600'}"
-              aria-hidden="true"
-            ></span>
-            <span>{row.label}</span>
-            <span class="text-xs text-zinc-500">
-              {present ? $_('config.firewall_rule_present') : $_('config.firewall_rule_absent')}
-            </span>
-          </li>
-        {/each}
-      </ul>
-      <div class="flex items-center gap-3">
-        <button
-          type="button"
-          onclick={ensureFirewall}
-          disabled={fwBusy}
-          class="rounded-md bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-40"
-        >
-          {fwBusy ? $_('config.firewall_applying') : $_('config.firewall_create')}
-        </button>
-        <button
-          type="button"
-          onclick={removeFirewall}
-          disabled={fwBusy}
-          class="rounded-md border border-zinc-700 px-3 py-1.5 text-sm text-zinc-200 hover:bg-zinc-800 disabled:opacity-40"
-        >
-          {$_('config.firewall_remove')}
-        </button>
-        {#if fwError}
-          <span class="text-sm text-red-400">{fwError}</span>
-        {:else if fwSuccess}
-          <span class="text-sm text-emerald-400">{fwSuccess}</span>
-        {/if}
-      </div>
-    </fieldset>
   {/if}
 </section>
