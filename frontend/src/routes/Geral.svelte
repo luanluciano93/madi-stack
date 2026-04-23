@@ -310,11 +310,16 @@
               {inFlight ? $_('actions.installing') : $_('actions.install')}
             </button>
           {:else if isPma}
+            {@const nginxRunning =
+              rows.find((r) => r.info.slug === 'nginx')?.status === 'running'}
             <button
               type="button"
               onclick={openPhpMyAdmin}
-              class="rounded-md bg-brand-600 px-3 py-1.5 text-sm text-white hover:bg-brand-500"
-              title={$_('geral.pma_open_tooltip', { values: { port: httpPort } })}
+              disabled={!nginxRunning}
+              class="rounded-md bg-brand-600 px-3 py-1.5 text-sm text-white hover:bg-brand-500 disabled:opacity-40 disabled:cursor-not-allowed"
+              title={nginxRunning
+                ? $_('geral.pma_open_tooltip', { values: { port: httpPort } })
+                : $_('geral.pma_needs_nginx')}
             >
               {$_('actions.open')}
             </button>

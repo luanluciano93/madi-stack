@@ -112,6 +112,7 @@
     "ping_backend": "ping backend",
     "pma_served_by_nginx": "served by nginx",
     "pma_open_tooltip": "Open http://localhost:{port}/phpmyadmin/ in the default browser",
+    "pma_needs_nginx": "Start Nginx first — phpMyAdmin is served by it",
     "onboarding_title": "First time here?",
     "onboarding_body_html": "Click <strong>Download all</strong> to fetch nginx, PHP, MariaDB and phpMyAdmin from official sources (first run takes ~2 min). Then, on each row, <strong>Start</strong> brings the service up. Put your sites in subfolders of <code>www/</code> and the <strong>Sites</strong> tab turns each one into <code>&lt;name&gt;.test</code>.",
     "phase_resolving": "Resolving…",
