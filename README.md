@@ -74,22 +74,22 @@ Pegue a versão mais recente na [**página de Releases**](https://github.com/lua
 
 <p align="center">
   <img src="docs/screenshots/geral.png" alt="Aba Geral — status dos serviços" width="720" />
-  <br><em>Aba <strong>Geral</strong>: start/stop dos serviços, PID e porta em uso</em>
+  <br><em>Aba <strong>Geral</strong>: start/stop com PID e porta em uso, painel de eventos no rodapé</em>
 </p>
 
 <p align="center">
   <img src="docs/screenshots/sites.png" alt="Aba Sites — virtual hosts" width="720" />
-  <br><em>Aba <strong>Sites</strong>: cada subpasta de <code>www/</code> vira um <code>&lt;nome&gt;.test</code></em>
+  <br><em>Aba <strong>Sites</strong>: cada subpasta de <code>www/</code> vira um <code>&lt;nome&gt;.test</code>, com HTTPS local opcional via mkcert</em>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/configuracoes.png" alt="Aba Configurações" width="720" />
+  <br><em>Aba <strong>Configurações</strong>: portas, idioma (PT-BR / EN / ES) e tema (escuro / claro)</em>
 </p>
 
 <p align="center">
   <img src="docs/screenshots/atualizacoes.png" alt="Aba Atualizações" width="720" />
-  <br><em>Aba <strong>Atualizações</strong>: versões instaladas vs. últimas publicadas</em>
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/firewall.png" alt="Aba Firewall" width="720" />
-  <br><em>Aba <strong>Firewall</strong>: regras do Windows Firewall em lote, 1 UAC</em>
+  <br><em>Aba <strong>Atualizações</strong>: versões instaladas vs. últimas publicadas pelos projetos oficiais</em>
 </p>
 
 ## 🗺 Roadmap
