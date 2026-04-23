@@ -21,8 +21,8 @@ edition = "2021"
 rust-version = "1.75"
 authors = ["luanluciano93 <luanluciano93@gmail.com>"]
 license = "MIT"
-repository = "https://github.com/luanluciano93/MadiStack"
-homepage = "https://github.com/luanluciano93/MadiStack"
+repository = "https://github.com/luanluciano93/madi-stack"
+homepage = "https://github.com/luanluciano93/madi-stack"
 
 [workspace.dependencies]
 # Internal crates

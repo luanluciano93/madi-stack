@@ -3,7 +3,7 @@
   import { open as shellOpen } from '@tauri-apps/plugin-shell';
 
   const version = '0.1.0';
-  const repoUrl = 'https://github.com/luanluciano93/MadiStack';
+  const repoUrl = 'https://github.com/luanluciano93/madi-stack';
   const authorUrl = 'https://github.com/luanluciano93';
 
   function openExternal(url: string) {
@@ -42,7 +42,7 @@
         onclick={() => openExternal(repoUrl)}
         class="font-mono underline underline-offset-2 hover:text-brand-400"
       >
-        github.com/luanluciano93/MadiStack
+        github.com/luanluciano93/madi-stack
       </button>
     </dd>
   </dl>

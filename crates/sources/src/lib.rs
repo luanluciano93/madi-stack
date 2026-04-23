@@ -21,7 +21,7 @@ pub mod phpmyadmin;
 pub const USER_AGENT: &str = concat!(
     "MadiStack/",
     env!("CARGO_PKG_VERSION"),
-    " (+https://github.com/luanluciano93/MadiStack)"
+    " (+https://github.com/luanluciano93/madi-stack)"
 );
 
 /// Errors returned by a source client.

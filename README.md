@@ -10,7 +10,7 @@ MadiStack reúne Nginx, MariaDB, PHP e phpMyAdmin em uma GUI portátil — é s�
 [![Platform](https://img.shields.io/badge/Platform-Windows%2010%2B-blue.svg)](#)
 [![Built with Rust](https://img.shields.io/badge/Built%20with-Rust-dea584.svg)](https://www.rust-lang.org/)
 [![Built with Tauri](https://img.shields.io/badge/Built%20with-Tauri-24C8DB.svg)](https://tauri.app/)
-[![GitHub release](https://img.shields.io/github/v/release/luanluciano93/MadiStack?include_prereleases)](https://github.com/luanluciano93/MadiStack/releases)
+[![GitHub release](https://img.shields.io/github/v/release/luanluciano93/madi-stack?include_prereleases)](https://github.com/luanluciano93/madi-stack/releases)
 
 [Download](#-download) · [Funcionalidades](#-funcionalidades) · [Início Rápido](#-início-rápido) · [Screenshots](#-screenshots) · [FAQ](#-faq)
 
@@ -56,7 +56,7 @@ Cansado do **USBWebserver** travado no Apache 2.2 e em versões antigas do PHP? 
 
 ## 📥 Download
 
-Pegue a versão mais recente na [**página de Releases**](https://github.com/luanluciano93/MadiStack/releases/latest). Três formatos, escolha o que se encaixa no seu fluxo:
+Pegue a versão mais recente na [**página de Releases**](https://github.com/luanluciano93/madi-stack/releases/latest). Três formatos, escolha o que se encaixa no seu fluxo:
 
 | Arquivo | Tamanho | Quando usar |
 | --- | --- | --- |
@@ -70,7 +70,7 @@ Pegue a versão mais recente na [**página de Releases**](https://github.com/lua
 
 ## 🚀 Início Rápido
 
-1. Baixe **um** dos arquivos acima da [página de Releases](https://github.com/luanluciano93/MadiStack/releases/latest).
+1. Baixe **um** dos arquivos acima da [página de Releases](https://github.com/luanluciano93/madi-stack/releases/latest).
 2. **Se escolheu o portátil**: extraia em qualquer pasta. **Se escolheu o instalador**: execute e siga o wizard.
 3. Abra o `MadiStack.exe`.
 4. Na aba **Geral**, clique em **Baixar tudo** — Nginx, PHP, MariaDB e phpMyAdmin são baixados das fontes oficiais (~2 minutos, só uma vez).
@@ -145,7 +145,7 @@ Pegue a versão mais recente na [**página de Releases**](https://github.com/lua
 
 ```bash
 # Clone o repositório
-git clone https://github.com/luanluciano93/MadiStack.git
+git clone https://github.com/luanluciano93/madi-stack.git
 cd MadiStack
 
 # Instale o CLI do Tauri (uma vez por máquina)
