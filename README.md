@@ -92,6 +92,11 @@ Pegue a versão mais recente na [**página de Releases**](https://github.com/lua
   <br><em>Aba <strong>Atualizações</strong>: versões instaladas vs. últimas publicadas pelos projetos oficiais</em>
 </p>
 
+<p align="center">
+  <img src="docs/screenshots/firewall.png" alt="Aba Firewall" width="720" />
+  <br><em>Aba <strong>Firewall</strong>: regras inbound para nginx, MariaDB e php-cgi, aplicadas em lote com um único prompt de UAC</em>
+</p>
+
 ## 🗺 Roadmap
 
 - [x] Stack principal: Nginx + MariaDB + PHP + phpMyAdmin
