@@ -2,13 +2,7 @@
   import { onMount, onDestroy, tick } from 'svelte';
   import { _ } from 'svelte-i18n';
   import type { UnlistenFn } from '@tauri-apps/api/event';
-  import {
-    ipc,
-    onServiceLog,
-    type ComponentSlug,
-    type LogLine,
-    type LogStream,
-  } from '$lib/ipc';
+  import { ipc, onServiceLog, type ComponentSlug, type LogLine, type LogStream } from '$lib/ipc';
 
   type Props = {
     component: ComponentSlug;
@@ -26,9 +20,7 @@
 
   const MAX_LINES = 2000;
 
-  let visible = $derived(
-    filter === 'all' ? lines : lines.filter((l) => l.stream === filter),
-  );
+  let visible = $derived(filter === 'all' ? lines : lines.filter((l) => l.stream === filter));
 
   async function refresh() {
     // Snapshot of the full retained ring. Called on mount AND whenever the
@@ -57,15 +49,17 @@
 
   function handleScroll() {
     if (!container) return;
-    const atBottom =
-      container.scrollHeight - container.scrollTop - container.clientHeight < 8;
+    const atBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 8;
     follow = atBottom;
   }
 
   function fmtTs(ms: number): string {
     const d = new Date(ms);
-    return d.toLocaleTimeString('pt-BR', { hour12: false }) +
-      '.' + String(d.getMilliseconds()).padStart(3, '0');
+    return (
+      d.toLocaleTimeString('pt-BR', { hour12: false }) +
+      '.' +
+      String(d.getMilliseconds()).padStart(3, '0')
+    );
   }
 
   /// Decide whether a log line should be painted red. Many services (nginx,
@@ -84,9 +78,7 @@
   let copied = $state(false);
 
   async function copyAll() {
-    const text = visible
-      .map((l) => `${fmtTs(l.ts_ms)}  ${l.text}`)
-      .join('\n');
+    const text = visible.map((l) => `${fmtTs(l.ts_ms)}  ${l.text}`).join('\n');
     try {
       await navigator.clipboard.writeText(text);
       copied = true;
@@ -130,9 +122,7 @@
           type="button"
           onclick={() => (filter = f as 'all' | LogStream)}
           class={`rounded px-2 py-0.5 ${
-            filter === f
-              ? 'bg-zinc-700 text-zinc-50'
-              : 'text-zinc-400 hover:text-zinc-200'
+            filter === f ? 'bg-zinc-700 text-zinc-50' : 'text-zinc-400 hover:text-zinc-200'
           }`}
         >
           {f}
@@ -140,11 +130,7 @@
       {/each}
     </div>
     <label class="flex items-center gap-1.5 text-zinc-400">
-      <input
-        type="checkbox"
-        bind:checked={follow}
-        class="rounded border-zinc-700 bg-zinc-900"
-      />
+      <input type="checkbox" bind:checked={follow} class="rounded border-zinc-700 bg-zinc-900" />
       {$_('common.auto_scroll')}
     </label>
     <button
@@ -154,7 +140,9 @@
     >
       {copied ? $_('actions.copied') : $_('actions.copy')}
     </button>
-    <span class="text-zinc-500">{$_('common.lines_count', { values: { count: visible.length } })}</span>
+    <span class="text-zinc-500"
+      >{$_('common.lines_count', { values: { count: visible.length } })}</span
+    >
   </div>
 
   <div

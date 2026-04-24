@@ -4,12 +4,7 @@
   import type { UnlistenFn } from '@tauri-apps/api/event';
   import StatusLed from './StatusLed.svelte';
   import LogViewer from './LogViewer.svelte';
-  import {
-    ipc,
-    onServiceStatus,
-    type ComponentSlug,
-    type ServiceStatus,
-  } from '$lib/ipc';
+  import { ipc, onServiceStatus, type ComponentSlug, type ServiceStatus } from '$lib/ipc';
 
   type Props = {
     slug: ComponentSlug;

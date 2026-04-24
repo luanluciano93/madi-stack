@@ -53,9 +53,10 @@ semver     = { version = "1", features = ["serde"] }
 tera = "1"
 
 # Crypto / archives
-sha2 = "0.10"
-hex  = "0.4"
-zip  = { version = "2", default-features = false, features = ["deflate"] }
+sha2   = "0.10"
+hex    = "0.4"
+zip    = { version = "2", default-features = false, features = ["deflate"] }
+flate2 = "1"
 
 # Errors / logging
 thiserror          = "2"

@@ -4,6 +4,7 @@
     windows_subsystem = "windows"
 )]
 
+mod backup;
 mod commands;
 mod install;
 mod mkcert;
@@ -106,6 +107,10 @@ fn main() {
             commands::open_path,
             commands::open_terminal,
             commands::mkcert_status,
+            commands::mariadb_list_databases,
+            commands::mariadb_list_backups,
+            commands::mariadb_backup,
+            commands::mariadb_delete_backup,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

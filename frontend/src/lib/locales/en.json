@@ -14,7 +14,9 @@
     "atualizacoes": "Updates",
     "sobre": "About",
     "open_install_dir": "Open MadiStack folder",
-    "open_terminal": "Open terminal here"
+    "open_terminal": "Open terminal here",
+    "switch_to_dark": "Dark theme",
+    "switch_to_light": "Light theme"
   },
   "actions": {
     "start": "Start",
@@ -170,5 +172,36 @@
     "update_install": "Download and install",
     "update_downloading": "Downloading…",
     "update_downloading_sized": "Downloading… {received} / {total} MB"
+  },
+  "tour": {
+    "skip": "Skip",
+    "next": "Next",
+    "finish": "Finish",
+    "progress": "Step {current} of {total}",
+    "step1_title": "Start by downloading the components",
+    "step1_body": "This button fetches nginx, PHP, MariaDB and phpMyAdmin from official sources. First run takes ~2 min.",
+    "step2_title": "Publish your sites",
+    "step2_body": "Every subfolder of www/ becomes a site at <name>.test. Check HTTPS to issue a certificate via mkcert on first use.",
+    "step3_title": "Keep everything up-to-date",
+    "step3_body": "Click Check all to compare installed versions against the latest published by each upstream project.",
+    "config_header": "Tutorial",
+    "config_desc": "Replay the welcome tour highlighting the main UI hotspots.",
+    "config_restart": "Start tutorial"
+  },
+  "mariadb": {
+    "backups_title": "Backups",
+    "backups_subtitle": "Compressed dumps live in `data/backups/`.",
+    "backup_needs_running": "Start MariaDB to back up databases.",
+    "backup_select_db": "Database",
+    "backup_no_dbs": "(no user databases)",
+    "backup_now": "Back up now",
+    "backing_up": "Backing up…",
+    "backup_progress_line": "Dumping {database} — {size} so far",
+    "backups_list_title": "Saved backups",
+    "backups_empty": "No backups yet.",
+    "backup_delete": "Delete",
+    "backup_deleting": "Deleting…",
+    "open_folder": "Open folder",
+    "backup_delete_confirm": "Delete file {filename}? This cannot be undone."
   }
 }

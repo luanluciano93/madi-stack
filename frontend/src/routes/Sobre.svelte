@@ -77,8 +77,11 @@
     <h2 class="text-2xl font-semibold">{$_('about.title')}</h2>
   </header>
 
-  <p class="max-w-xl text-sm leading-relaxed text-zinc-300 [&_code]:rounded [&_code]:bg-zinc-800 [&_code]:px-1 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-xs [&_code]:text-zinc-200">
-    <strong>MadiStack</strong> {@html $_('about.description')}
+  <p
+    class="max-w-xl text-sm leading-relaxed text-zinc-300 [&_code]:rounded [&_code]:bg-zinc-800 [&_code]:px-1 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-xs [&_code]:text-zinc-200"
+  >
+    <strong>MadiStack</strong>
+    {@html $_('about.description')}
   </p>
 
   <dl class="grid max-w-md grid-cols-[auto_1fr] gap-x-6 gap-y-1 text-sm">
@@ -133,7 +136,9 @@
         {$_('about.update_available', { values: { version: ui.update.version } })}
       </p>
       {#if ui.update.body}
-        <pre class="max-h-32 overflow-y-auto rounded bg-zinc-950 p-2 font-mono text-xs text-zinc-300">{ui.update.body}</pre>
+        <pre
+          class="max-h-32 overflow-y-auto rounded bg-zinc-950 p-2 font-mono text-xs text-zinc-300">{ui
+            .update.body}</pre>
       {/if}
       <button
         type="button"

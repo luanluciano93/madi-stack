@@ -45,6 +45,7 @@ tracing-subscriber = { workspace = true }
 parking_lot        = { workspace = true }
 directories        = { workspace = true }
 semver             = { workspace = true }
+flate2             = { workspace = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }

@@ -2331,6 +2331,7 @@ version = "0.1.2"
 dependencies = [
  "anyhow",
  "directories",
+ "flate2",
  "madi-config-gen",
  "madi-core",
  "madi-downloader",

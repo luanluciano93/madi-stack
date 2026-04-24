@@ -1,6 +1,9 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import Sidebar from '$lib/components/Sidebar.svelte';
   import EventLog from '$lib/components/EventLog.svelte';
+  import Coachmark from '$lib/components/Coachmark.svelte';
+  import { bindTourNavigation, tour, type TourRoute } from '$lib/tour';
   import Geral from './routes/Geral.svelte';
   import Nginx from './routes/Nginx.svelte';
   import MariaDB from './routes/MariaDB.svelte';
@@ -23,6 +26,18 @@
     | 'sobre';
 
   let active = $state<Route>('geral');
+
+  // Hand the tour engine a setter for our router so it can flip tabs as
+  // the user advances through coach-marks. The cast is safe — `TourRoute`
+  // is a structural copy of `Route` kept in tour.ts to avoid an import
+  // cycle with this file.
+  bindTourNavigation((route: TourRoute) => {
+    active = route as Route;
+  });
+
+  onMount(() => {
+    tour.startIfFirstRun();
+  });
 </script>
 
 <!-- Top-level layout: sidebar + main content grow to fill the viewport;
@@ -59,3 +74,5 @@
 
   <EventLog />
 </div>
+
+<Coachmark />

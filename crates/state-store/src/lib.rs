@@ -51,6 +51,17 @@ pub enum Language {
     #[default]
     PtBr,
     En,
+    Es,
+    Nl,
+    De,
+    It,
+    Pl,
+    Ru,
+    ZhCn,
+    Tr,
+    Hu,
+    Lv,
+    Ro,
 }
 
 /// Load the state file, or return a default one if it doesn't exist.

@@ -41,10 +41,9 @@
     try {
       await ipc.vhostEnable(name, https);
       flashSuccess(
-        t(
-          https ? 'sites.enabled_https_success' : 'sites.enabled_success',
-          { values: { hostname: `${name}.test` } },
-        ),
+        t(https ? 'sites.enabled_https_success' : 'sites.enabled_success', {
+          values: { hostname: `${name}.test` },
+        }),
       );
       await refresh();
     } catch (e) {
@@ -61,9 +60,7 @@
     const t = get(_);
     try {
       await ipc.vhostDisable(name);
-      flashSuccess(
-        t('sites.disabled_success', { values: { hostname: `${name}.test` } }),
-      );
+      flashSuccess(t('sites.disabled_success', { values: { hostname: `${name}.test` } }));
       await refresh();
     } catch (e) {
       error = String(e);
@@ -93,7 +90,7 @@
 
 <section class="space-y-6">
   <header class="flex items-start justify-between gap-4">
-    <div>
+    <div data-tour="https-toggle">
       <h2 class="text-2xl font-semibold">{$_('sites.title')}</h2>
       <p class="text-sm text-zinc-400">{@html $_('sites.subtitle_html')}</p>
     </div>
@@ -115,9 +112,7 @@
   {:else}
     <ul class="space-y-2">
       {#each sites as site (site.name)}
-        <li
-          class="flex items-center gap-3 rounded-md border border-zinc-800 bg-zinc-900/50 p-4"
-        >
+        <li class="flex items-center gap-3 rounded-md border border-zinc-800 bg-zinc-900/50 p-4">
           <span
             class="inline-block h-2 w-2 rounded-full {site.enabled
               ? 'bg-emerald-400'
@@ -128,7 +123,11 @@
             <div class="font-medium">{site.name}</div>
             <div class="text-xs text-zinc-500">
               <span class="font-mono">{site.hostname}</span>
-              · {site.enabled ? (site.ssl ? $_('sites.active_https') : $_('sites.active')) : $_('sites.inactive')}
+              · {site.enabled
+                ? site.ssl
+                  ? $_('sites.active_https')
+                  : $_('sites.active')
+                : $_('sites.inactive')}
             </div>
           </div>
           {#if site.enabled}
@@ -149,7 +148,10 @@
               {busy === site.name ? '…' : $_('actions.disable')}
             </button>
           {:else}
-            <label class="flex items-center gap-1.5 text-xs text-zinc-400" title={$_('sites.https_toggle_title')}>
+            <label
+              class="flex items-center gap-1.5 text-xs text-zinc-400"
+              title={$_('sites.https_toggle_title')}
+            >
               <input
                 type="checkbox"
                 checked={httpsChoice[site.name] ?? false}

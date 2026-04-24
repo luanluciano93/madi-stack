@@ -6,5 +6,5 @@
   "printWidth": 100,
   "tabWidth": 2,
   "trailingComma": "all",
-  "svelteSortOrder": "scripts-markup-styles"
+  "svelteSortOrder": "options-scripts-markup-styles"
 }

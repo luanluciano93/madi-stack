@@ -1133,6 +1133,53 @@ async fn reload_nginx(install_dir: &std::path::Path) -> Result<(), String> {
     Ok(())
 }
 
+// --- MariaDB backup commands -----------------------------------------------
+
+/// List user databases accessible with the stored root credentials. System
+/// schemas (`mysql`, `performance_schema`, etc.) are filtered out in the
+/// backup module — the UI shows only databases a user would reasonably
+/// want to back up.
+#[tauri::command]
+pub async fn mariadb_list_databases(
+    state: tauri::State<'_, AppState>,
+) -> Result<Vec<String>, String> {
+    let install_dir = state.supervisor.install_dir().to_path_buf();
+    let port = state.stored.read().ports.mariadb;
+    crate::backup::list_databases(&install_dir, port).await
+}
+
+/// List existing `.sql.gz` files in `data/backups/`, newest first.
+#[tauri::command]
+pub fn mariadb_list_backups(
+    state: tauri::State<'_, AppState>,
+) -> Result<Vec<crate::backup::BackupInfo>, String> {
+    crate::backup::list_backups(state.supervisor.install_dir())
+}
+
+/// Dump a single database to `data/backups/<db>_<ts>.sql.gz`, emitting
+/// `backup-progress` events. Returns the created filename so the UI can
+/// refresh and highlight it.
+#[tauri::command]
+pub async fn mariadb_backup(
+    app: AppHandle,
+    state: tauri::State<'_, AppState>,
+    database: String,
+) -> Result<String, String> {
+    let install_dir = state.supervisor.install_dir().to_path_buf();
+    let port = state.stored.read().ports.mariadb;
+    crate::backup::backup_database(&app, &install_dir, port, database).await
+}
+
+/// Remove a backup file. Guarded against path traversal in the backup
+/// module — the frontend passes only the bare filename.
+#[tauri::command]
+pub fn mariadb_delete_backup(
+    state: tauri::State<'_, AppState>,
+    filename: String,
+) -> Result<(), String> {
+    crate::backup::delete_backup(state.supervisor.install_dir(), &filename)
+}
+
 #[cfg(test)]
 mod tests {
     //! Unit tests for command-level helpers that don't touch Tauri state.

@@ -329,8 +329,15 @@
     {#if rows.some((r) => !r.installed)}
       <button
         type="button"
+        data-tour="install-all"
         onclick={installAll}
-        disabled={installingAll || rows.some((r) => r.install.phase !== 'idle' && r.install.phase !== 'done' && r.install.phase !== 'error')}
+        disabled={installingAll ||
+          rows.some(
+            (r) =>
+              r.install.phase !== 'idle' &&
+              r.install.phase !== 'done' &&
+              r.install.phase !== 'error',
+          )}
         class="shrink-0 rounded-md bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-40"
       >
         {installingAll ? $_('geral.installing_all') : $_('geral.install_all')}
@@ -359,7 +366,9 @@
   {/if}
 
   {#if installError}
-    <p class="text-sm text-red-400">{$_('geral.install_all_failed', { values: { error: installError } })}</p>
+    <p class="text-sm text-red-400">
+      {$_('geral.install_all_failed', { values: { error: installError } })}
+    </p>
   {/if}
 
   <div class="space-y-2">
@@ -370,9 +379,7 @@
         row.install.phase !== 'done' &&
         row.install.phase !== 'error'}
       {@const pct = percent(row)}
-      <div
-        class="flex flex-col gap-2 rounded-lg border border-zinc-800 bg-zinc-900/60 p-3"
-      >
+      <div class="flex flex-col gap-2 rounded-lg border border-zinc-800 bg-zinc-900/60 p-3">
         <div class="flex items-center gap-3">
           <StatusLed
             status={row.status === 'stopping'
@@ -387,11 +394,15 @@
               {:else if isPma}
                 {$_('geral.pma_served_by_nginx')}
               {:else if row.status === 'running' && portFor(row.info.slug) !== null && row.pid !== null}
-                {$_('common.running_on_port_pid', { values: { port: portFor(row.info.slug), pid: row.pid } })}
+                {$_('common.running_on_port_pid', {
+                  values: { port: portFor(row.info.slug), pid: row.pid },
+                })}
               {:else if row.status === 'running' && portFor(row.info.slug) !== null}
                 {$_('common.running_on_port', { values: { port: portFor(row.info.slug) } })}
               {:else}
-                {$_(`common.${row.status === 'starting' || row.status === 'stopping' ? 'running' : row.status}`)}
+                {$_(
+                  `common.${row.status === 'starting' || row.status === 'stopping' ? 'running' : row.status}`,
+                )}
               {/if}
               {#if row.error}
                 <span class="ml-2 text-red-400">— {row.error}</span>
@@ -408,10 +419,8 @@
               {inFlight ? $_('actions.installing') : $_('actions.install')}
             </button>
           {:else if isPma}
-            {@const nginxRunning =
-              rows.find((r) => r.info.slug === 'nginx')?.status === 'running'}
-            {@const phpRunning =
-              rows.find((r) => r.info.slug === 'php')?.status === 'running'}
+            {@const nginxRunning = rows.find((r) => r.info.slug === 'nginx')?.status === 'running'}
+            {@const phpRunning = rows.find((r) => r.info.slug === 'php')?.status === 'running'}
             {@const mariadbRunning =
               rows.find((r) => r.info.slug === 'mariadb')?.status === 'running'}
             {@const missingRequired = [
@@ -428,7 +437,9 @@
                 ? mariadbRunning
                   ? $_('geral.pma_open_tooltip', { values: { port: httpPort } })
                   : $_('geral.pma_mariadb_hint')
-                : $_('geral.pma_needs_services', { values: { missing: missingRequired.join(', ') } })}
+                : $_('geral.pma_needs_services', {
+                    values: { missing: missingRequired.join(', ') },
+                  })}
             >
               {$_('actions.open')}
             </button>
@@ -456,10 +467,7 @@
             <span class="min-w-[9rem]">{phaseLabel(row.install.phase)}</span>
             {#if row.install.phase === 'downloading' && pct !== null}
               <div class="h-1.5 flex-1 overflow-hidden rounded-full bg-zinc-800">
-                <div
-                  class="h-full bg-brand-500 transition-all"
-                  style="width: {pct}%"
-                ></div>
+                <div class="h-full bg-brand-500 transition-all" style="width: {pct}%"></div>
               </div>
               <span class="font-mono text-zinc-500">{pct}%</span>
               <span class="font-mono text-zinc-600">{fmtBytes(row.install.bytes)}</span>
@@ -509,7 +517,9 @@
     {/each}
   </div>
 
-  <div class="flex flex-wrap items-center gap-3 rounded-lg border border-zinc-800 bg-zinc-900/60 p-4">
+  <div
+    class="flex flex-wrap items-center gap-3 rounded-lg border border-zinc-800 bg-zinc-900/60 p-4"
+  >
     <button
       type="button"
       onclick={pingBackend}

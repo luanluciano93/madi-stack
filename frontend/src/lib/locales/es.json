@@ -14,7 +14,9 @@
     "atualizacoes": "Actualizaciones",
     "sobre": "Acerca de",
     "open_install_dir": "Abrir carpeta de MadiStack",
-    "open_terminal": "Abrir terminal aquí"
+    "open_terminal": "Abrir terminal aquí",
+    "switch_to_dark": "Tema oscuro",
+    "switch_to_light": "Tema claro"
   },
   "actions": {
     "start": "Iniciar",
@@ -170,5 +172,36 @@
     "update_install": "Descargar e instalar",
     "update_downloading": "Descargando…",
     "update_downloading_sized": "Descargando… {received} / {total} MB"
+  },
+  "tour": {
+    "skip": "Omitir",
+    "next": "Siguiente",
+    "finish": "Finalizar",
+    "progress": "Paso {current} de {total}",
+    "step1_title": "Empiece descargando los componentes",
+    "step1_body": "Este botón obtiene nginx, PHP, MariaDB y phpMyAdmin de las fuentes oficiales. El primer uso toma ~2 min.",
+    "step2_title": "Publique sus sitios",
+    "step2_body": "Cada subcarpeta de www/ se convierte en un sitio en <nombre>.test. Marque HTTPS para emitir certificado vía mkcert en el primer uso.",
+    "step3_title": "Mantenga todo actualizado",
+    "step3_body": "Haga clic en Verificar todo para comparar las versiones instaladas con las últimas publicadas por los proyectos oficiales.",
+    "config_header": "Tutorial",
+    "config_desc": "Vuelve a mostrar el recorrido de bienvenida resaltando los principales puntos de la interfaz.",
+    "config_restart": "Iniciar tutorial"
+  },
+  "mariadb": {
+    "backups_title": "Copias de seguridad",
+    "backups_subtitle": "Los dumps comprimidos se guardan en `data/backups/`.",
+    "backup_needs_running": "Inicie MariaDB para respaldar las bases de datos.",
+    "backup_select_db": "Base de datos",
+    "backup_no_dbs": "(sin bases de usuario)",
+    "backup_now": "Respaldar ahora",
+    "backing_up": "Respaldando…",
+    "backup_progress_line": "Respaldando {database} — {size} hasta ahora",
+    "backups_list_title": "Respaldos guardados",
+    "backups_empty": "Aún no hay respaldos.",
+    "backup_delete": "Eliminar",
+    "backup_deleting": "Eliminando…",
+    "open_folder": "Abrir carpeta",
+    "backup_delete_confirm": "¿Eliminar el archivo {filename}? Esto no se puede deshacer."
   }
 }

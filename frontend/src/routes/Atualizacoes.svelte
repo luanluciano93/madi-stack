@@ -125,6 +125,7 @@
     </div>
     <button
       type="button"
+      data-tour="check-updates"
       onclick={check}
       disabled={checking}
       class="shrink-0 rounded-md bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-40"
@@ -156,9 +157,7 @@
         row.progress.phase !== 'done' &&
         row.progress.phase !== 'error'}
       {@const pct = percent(row)}
-      <div
-        class="flex flex-col gap-2 rounded-lg border border-zinc-800 bg-zinc-900/60 p-3"
-      >
+      <div class="flex flex-col gap-2 rounded-lg border border-zinc-800 bg-zinc-900/60 p-3">
         <div class="flex items-center gap-3">
           <div class="min-w-0 flex-1">
             <div class="font-medium">{DISPLAY_NAME[row.slug]}</div>
@@ -167,16 +166,14 @@
               {#if row.current}
                 <span class="font-mono text-zinc-300">{row.current}</span>
               {:else if row.installed_on_disk}
-                <span class="font-mono text-amber-400" title={$_('updates.unknown_version_tooltip')}>{$_('common.unknown_version')}</span>
+                <span class="font-mono text-amber-400" title={$_('updates.unknown_version_tooltip')}
+                  >{$_('common.unknown_version')}</span
+                >
               {:else}
                 <span class="font-mono text-zinc-500">—</span>
               {/if}
               · {$_('updates.available_label')}:
-              <span
-                class="font-mono {row.update_available
-                  ? 'text-emerald-400'
-                  : 'text-zinc-400'}"
-              >
+              <span class="font-mono {row.update_available ? 'text-emerald-400' : 'text-zinc-400'}">
                 {row.available}
               </span>
             </div>
@@ -221,10 +218,7 @@
             <span class="min-w-[9rem]">{phaseLabel(row.progress.phase)}</span>
             {#if row.progress.phase === 'downloading' && pct !== null}
               <div class="h-1.5 flex-1 overflow-hidden rounded-full bg-zinc-800">
-                <div
-                  class="h-full bg-brand-500 transition-all"
-                  style="width: {pct}%"
-                ></div>
+                <div class="h-full bg-brand-500 transition-all" style="width: {pct}%"></div>
               </div>
               <span class="font-mono text-zinc-500">{pct}%</span>
               <span class="font-mono text-zinc-600">{fmtBytes(row.progress.bytes)}</span>

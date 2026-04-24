@@ -30,10 +30,7 @@ function createStore() {
     subscribe,
     push(event: Omit<AppEvent, 'id' | 'ts'>) {
       update((list) => {
-        const next = [
-          ...list,
-          { id: nextId++, ts: Date.now(), ...event },
-        ];
+        const next = [...list, { id: nextId++, ts: Date.now(), ...event }];
         if (next.length > MAX_ENTRIES) {
           next.splice(0, next.length - MAX_ENTRIES);
         }

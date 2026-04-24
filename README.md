@@ -94,7 +94,7 @@ Pegue a versão mais recente na [**página de Releases**](https://github.com/lua
 
 <p align="center">
   <img src="docs/screenshots/configuracoes.png" alt="Aba Configurações" width="720" />
-  <br><em>Aba <strong>Configurações</strong>: portas, idioma (PT-BR / EN / ES) e tema (escuro / claro)</em>
+  <br><em>Aba <strong>Configurações</strong>: portas, idioma (13 línguas — PT-BR, EN, ES, NL, DE, IT, PL, RU, ZH-CN, TR, HU, LV, RO) e tema (escuro / claro)</em>
 </p>
 
 <p align="center">
@@ -117,12 +117,12 @@ Pegue a versão mais recente na [**página de Releases**](https://github.com/lua
 - [x] HTTPS local via mkcert embutido — 1 UAC e certificado válido pra sempre
 - [x] System tray + logs ao vivo com botão copiar
 - [x] Regras de Firewall do Windows via helper elevado (uma UAC só)
-- [ ] i18n completo PT-BR + EN
-- [ ] Dark mode 🌙 + tutorial na primeira execução
+- [x] i18n — 13 idiomas (PT-BR, EN, ES, NL, DE, IT, PL, RU, ZH-CN, TR, HU, LV, RO)
+- [x] Dark mode 🌙 + tutorial na primeira execução (coach-marks em 3 hotspots)
 - [ ] Troca de versão do PHP lado-a-lado
 - [ ] Redis e Memcached como componentes opcionais
 - [ ] Integração com Composer e WP-CLI
-- [ ] Backup/restore de bancos MariaDB
+- [x] Backup de bancos MariaDB (dumps gzipados em `data/backups/`) — restore planejado
 
 ## 🏗 Tech Stack
 

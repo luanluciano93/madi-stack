@@ -14,7 +14,9 @@
     "atualizacoes": "Atualizações",
     "sobre": "Sobre",
     "open_install_dir": "Abrir pasta do MadiStack",
-    "open_terminal": "Abrir terminal aqui"
+    "open_terminal": "Abrir terminal aqui",
+    "switch_to_dark": "Tema escuro",
+    "switch_to_light": "Tema claro"
   },
   "actions": {
     "start": "Iniciar",
@@ -170,5 +172,36 @@
     "update_install": "Baixar e instalar",
     "update_downloading": "Baixando…",
     "update_downloading_sized": "Baixando… {received} / {total} MB"
+  },
+  "tour": {
+    "skip": "Pular",
+    "next": "Próximo",
+    "finish": "Concluir",
+    "progress": "Passo {current} de {total}",
+    "step1_title": "Comece baixando os componentes",
+    "step1_body": "Este botão baixa nginx, PHP, MariaDB e phpMyAdmin das fontes oficiais. Primeiro uso leva ~2 min.",
+    "step2_title": "Publique seus sites",
+    "step2_body": "Cada subpasta de www/ vira um site em <nome>.test. Marque HTTPS para gerar certificado via mkcert na primeira vez.",
+    "step3_title": "Mantenha tudo atualizado",
+    "step3_body": "Clique em Verificar tudo para comparar as versões instaladas com as últimas publicadas pelos projetos oficiais.",
+    "config_header": "Tutorial",
+    "config_desc": "Reexibe o tour de boas-vindas destacando os principais pontos da interface.",
+    "config_restart": "Iniciar tutorial"
+  },
+  "mariadb": {
+    "backups_title": "Backups",
+    "backups_subtitle": "Dumps compactados dos bancos ficam em `data/backups/`.",
+    "backup_needs_running": "Inicie o MariaDB para fazer backup dos bancos.",
+    "backup_select_db": "Banco",
+    "backup_no_dbs": "(nenhum banco de usuário)",
+    "backup_now": "Backup agora",
+    "backing_up": "Fazendo backup…",
+    "backup_progress_line": "Gerando backup de {database} — {size} até agora",
+    "backups_list_title": "Backups salvos",
+    "backups_empty": "Nenhum backup ainda.",
+    "backup_delete": "Excluir",
+    "backup_deleting": "Excluindo…",
+    "open_folder": "Abrir pasta",
+    "backup_delete_confirm": "Excluir o arquivo {filename}? Esta ação não pode ser desfeita."
   }
 }

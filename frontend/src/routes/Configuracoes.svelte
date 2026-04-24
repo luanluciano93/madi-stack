@@ -2,24 +2,46 @@
   import { onMount } from 'svelte';
   import { _ } from 'svelte-i18n';
   import { get } from 'svelte/store';
-  import { setLocale, type LocaleCode } from '$lib/i18n';
+  import { AVAILABLE_LOCALES, LOCALE_LABELS, setLocale, type LocaleCode } from '$lib/i18n';
   import { theme, type Theme } from '$lib/theme';
-  import {
-    ipc,
-    type AppConfigDto,
-    type PortInspection,
-  } from '$lib/ipc';
+  import { tour } from '$lib/tour';
+  import { ipc, type AppConfigDto, type Language, type PortInspection } from '$lib/ipc';
+
+  // The backend stores `Language` as kebab-case lowercase (`pt-br`, `zh-cn`),
+  // while svelte-i18n uses BCP-47 codes (`pt-BR`, `zh-CN`). Map one to the
+  // other so the persisted pref and the runtime locale stay in sync.
+  const LANG_TO_LOCALE: Record<Language, LocaleCode> = {
+    'pt-br': 'pt-BR',
+    en: 'en',
+    es: 'es',
+    nl: 'nl',
+    de: 'de',
+    it: 'it',
+    pl: 'pl',
+    ru: 'ru',
+    'zh-cn': 'zh-CN',
+    tr: 'tr',
+    hu: 'hu',
+    lv: 'lv',
+    ro: 'ro',
+  };
 
   // Keep the i18n runtime locale in sync with the persisted pref. The
   // backend still stores the language for backward-compat with callers
   // that haven't migrated to svelte-i18n yet (e.g. dialog texts).
   function applyLocale(value: string) {
-    let next: LocaleCode;
-    if (value === 'en') next = 'en';
-    else if (value === 'es') next = 'es';
-    else next = 'pt-BR';
+    const next = LANG_TO_LOCALE[value as Language] ?? 'pt-BR';
     setLocale(next);
   }
+
+  /// Entries driving the <select>. Values are the backend-facing Language
+  /// codes (lowercase kebab); labels are each language's native name.
+  const LANGUAGE_OPTIONS: ReadonlyArray<{ value: Language; label: string }> = AVAILABLE_LOCALES.map(
+    (code) => ({
+      value: code.toLowerCase() as Language,
+      label: LOCALE_LABELS[code],
+    }),
+  );
 
   let config = $state<AppConfigDto | null>(null);
   let loading = $state(true);
@@ -122,7 +144,9 @@
         />
         {#if warnFor('http')}
           {@const w = warnFor('http')!}
-          <span class="text-xs {w.kind === 'self' ? 'text-emerald-400' : 'text-amber-400'}">{w.text}</span>
+          <span class="text-xs {w.kind === 'self' ? 'text-emerald-400' : 'text-amber-400'}"
+            >{w.text}</span
+          >
         {/if}
       </label>
       <label class="flex flex-col gap-1 text-sm">
@@ -137,7 +161,9 @@
         />
         {#if warnFor('mariadb')}
           {@const w = warnFor('mariadb')!}
-          <span class="text-xs {w.kind === 'self' ? 'text-emerald-400' : 'text-amber-400'}">{w.text}</span>
+          <span class="text-xs {w.kind === 'self' ? 'text-emerald-400' : 'text-amber-400'}"
+            >{w.text}</span
+          >
         {/if}
       </label>
       <label class="flex flex-col gap-1 text-sm">
@@ -152,7 +178,9 @@
         />
         {#if warnFor('php_fcgi')}
           {@const w = warnFor('php_fcgi')!}
-          <span class="text-xs {w.kind === 'self' ? 'text-emerald-400' : 'text-amber-400'}">{w.text}</span>
+          <span class="text-xs {w.kind === 'self' ? 'text-emerald-400' : 'text-amber-400'}"
+            >{w.text}</span
+          >
         {/if}
       </label>
       <label class="flex flex-col gap-1 text-sm">
@@ -192,9 +220,9 @@
           onchange={(e) => applyLocale(e.currentTarget.value)}
           class="w-40 rounded-md border border-zinc-800 bg-zinc-900 px-3 py-2"
         >
-          <option value="pt-br">Português (BR)</option>
-          <option value="en">English</option>
-          <option value="es">Español</option>
+          {#each LANGUAGE_OPTIONS as opt (opt.value)}
+            <option value={opt.value}>{opt.label}</option>
+          {/each}
         </select>
       </label>
       <label class="flex flex-col gap-1">
@@ -208,6 +236,18 @@
           <option value="light">{$_('config.theme_light')}</option>
         </select>
       </label>
+    </fieldset>
+
+    <fieldset class="max-w-md space-y-2 text-sm">
+      <legend class="mb-2 text-zinc-400">{$_('tour.config_header')}</legend>
+      <p class="text-xs text-zinc-500">{$_('tour.config_desc')}</p>
+      <button
+        type="button"
+        onclick={() => tour.restart()}
+        class="rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-xs text-zinc-200 hover:bg-zinc-800"
+      >
+        {$_('tour.config_restart')}
+      </button>
     </fieldset>
 
     <div class="flex items-center gap-3">
@@ -226,6 +266,5 @@
         <span class="text-sm text-red-400">{error}</span>
       {/if}
     </div>
-
   {/if}
 </section>

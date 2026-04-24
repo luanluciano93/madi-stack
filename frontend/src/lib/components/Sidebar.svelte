@@ -1,6 +1,7 @@
 <script lang="ts">
   import { _ } from 'svelte-i18n';
   import { ipc } from '$lib/ipc';
+  import { theme, toggleTheme } from '$lib/theme';
   import logoUrl from '../../assets/logo.png';
 
   /// Open the install directory (where `madistack.exe` lives) in Explorer.
@@ -54,16 +55,9 @@
   ] as const;
 </script>
 
-<aside
-  class="flex w-14 shrink-0 flex-col border-r border-zinc-800 bg-zinc-900/60 py-4 sm:w-56"
->
+<aside class="flex w-14 shrink-0 flex-col border-r border-zinc-800 bg-zinc-900/60 py-4 sm:w-56">
   <div class="flex items-center justify-center px-3 pb-4 sm:justify-start sm:px-5">
-    <img
-      src={logoUrl}
-      alt="MadiStack"
-      class="h-8 w-8 shrink-0 rounded"
-      draggable="false"
-    />
+    <img src={logoUrl} alt="MadiStack" class="h-8 w-8 shrink-0 rounded" draggable="false" />
     <div class="ml-3 hidden sm:block">
       <h1 class="text-lg font-bold leading-tight tracking-tight">MadiStack</h1>
       <p class="text-xs text-zinc-500">v0.1.2 — dev</p>
@@ -87,10 +81,21 @@
     {/each}
   </nav>
 
-  <!-- Footer actions: open the install folder in Explorer + spawn a
-       terminal there. Stays pinned to the bottom of the sidebar
+  <!-- Footer actions: theme toggle + open the install folder in Explorer +
+       spawn a terminal there. Stays pinned to the bottom of the sidebar
        regardless of how many nav tabs there are. -->
   <div class="mt-2 flex flex-col gap-0.5 px-2">
+    <button
+      type="button"
+      onclick={toggleTheme}
+      title={$theme === 'dark' ? $_('nav.switch_to_light') : $_('nav.switch_to_dark')}
+      class="flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-white"
+    >
+      <span class="w-4 shrink-0 text-center text-zinc-500">{$theme === 'dark' ? '☀' : '🌙'}</span>
+      <span class="hidden truncate sm:inline"
+        >{$theme === 'dark' ? $_('nav.switch_to_light') : $_('nav.switch_to_dark')}</span
+      >
+    </button>
     <button
       type="button"
       onclick={openInstallDir}

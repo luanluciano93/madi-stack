@@ -69,11 +69,7 @@
   </div>
 
   <ul class="space-y-1 text-sm">
-    {#each [
-      { key: 'nginx', label: 'Nginx' },
-      { key: 'mariadb', label: 'MariaDB' },
-      { key: 'php_fcgi', label: 'PHP FastCGI' },
-    ] as row (row.key)}
+    {#each [{ key: 'nginx', label: 'Nginx' }, { key: 'mariadb', label: 'MariaDB' }, { key: 'php_fcgi', label: 'PHP FastCGI' }] as row (row.key)}
       {@const present = fwStatus?.[row.key as keyof FirewallRulesStatus] ?? false}
       <li class="flex items-center gap-2">
         <span
