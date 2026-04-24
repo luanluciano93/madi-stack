@@ -795,6 +795,40 @@ pub fn www_dir(state: tauri::State<'_, AppState>) -> String {
         .into_owned()
 }
 
+/// Spawn an interactive terminal with `cwd` as the working directory.
+/// Tries Windows Terminal first (`wt.exe`) — the modern default on
+/// Windows 11, installable on Windows 10. Falls back to PowerShell so
+/// the feature still works on stock installs without `wt` on PATH.
+/// The user is expected to see a visible window, so we don't set
+/// `CREATE_NO_WINDOW`.
+#[tauri::command]
+pub fn open_terminal(cwd: String) -> Result<(), String> {
+    #[cfg(windows)]
+    {
+        if std::process::Command::new("wt.exe")
+            .args(["-d", &cwd])
+            .spawn()
+            .is_ok()
+        {
+            return Ok(());
+        }
+        std::process::Command::new("powershell.exe")
+            .args([
+                "-NoExit",
+                "-Command",
+                &format!("Set-Location -LiteralPath '{cwd}'"),
+            ])
+            .spawn()
+            .map_err(|e| format!("falha ao abrir terminal: {e}"))?;
+        Ok(())
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = cwd;
+        Err("terminal só funciona no Windows".into())
+    }
+}
+
 /// Open a filesystem path with the OS default handler. On Windows we shell
 /// out to `cmd /c start "" "<path>"` — this respects file associations
 /// (Notepad for `.ini`/`.conf`, Explorer for folders) and works regardless

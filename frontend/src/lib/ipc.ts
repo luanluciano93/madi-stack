@@ -135,6 +135,7 @@ export const ipc = {
   servicePid: (component: ComponentSlug) =>
     invoke<number | null>('service_pid', { component }),
   openPath: (path: string) => invoke<void>('open_path', { path }),
+  openTerminal: (cwd: string) => invoke<void>('open_terminal', { cwd }),
   pmaInstallInfo: () => invoke<PmaInstallInfo>('pma_install_info'),
 };
 

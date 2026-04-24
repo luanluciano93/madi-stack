@@ -104,6 +104,7 @@ fn main() {
             commands::service_pid,
             commands::pma_install_info,
             commands::open_path,
+            commands::open_terminal,
             commands::mkcert_status,
         ])
         .run(tauri::generate_context!())

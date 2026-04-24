@@ -14,6 +14,18 @@
     }
   }
 
+  /// Launch a terminal (Windows Terminal or PowerShell) with cwd at the
+  /// install directory. Handy for running `composer`, `mysql -u root`,
+  /// `git clone`, etc. without leaving the app.
+  async function openTerminal() {
+    try {
+      const dir = await ipc.installDir();
+      await ipc.openTerminal(dir);
+    } catch {
+      // Spawn failures surface as a notification — for now keep quiet.
+    }
+  }
+
   let { active = $bindable() } = $props<{
     active:
       | 'geral'
@@ -75,9 +87,10 @@
     {/each}
   </nav>
 
-  <!-- Footer action: open the install folder in Explorer. Stays pinned to
-       the bottom of the sidebar regardless of how many nav tabs there are. -->
-  <div class="mt-2 px-2">
+  <!-- Footer actions: open the install folder in Explorer + spawn a
+       terminal there. Stays pinned to the bottom of the sidebar
+       regardless of how many nav tabs there are. -->
+  <div class="mt-2 flex flex-col gap-0.5 px-2">
     <button
       type="button"
       onclick={openInstallDir}
@@ -86,6 +99,15 @@
     >
       <span class="w-4 shrink-0 text-center text-zinc-500">📂</span>
       <span class="hidden truncate sm:inline">{$_('nav.open_install_dir')}</span>
+    </button>
+    <button
+      type="button"
+      onclick={openTerminal}
+      title={$_('nav.open_terminal')}
+      class="flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-white"
+    >
+      <span class="w-4 shrink-0 text-center text-zinc-500">⌨</span>
+      <span class="hidden truncate sm:inline">{$_('nav.open_terminal')}</span>
     </button>
   </div>
 </aside>

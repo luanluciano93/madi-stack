@@ -13,7 +13,8 @@
     "configuracoes": "Configurações",
     "atualizacoes": "Atualizações",
     "sobre": "Sobre",
-    "open_install_dir": "Abrir pasta do MadiStack"
+    "open_install_dir": "Abrir pasta do MadiStack",
+    "open_terminal": "Abrir terminal aqui"
   },
   "actions": {
     "start": "Iniciar",
