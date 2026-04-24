@@ -74,9 +74,11 @@ jobs:
           releaseBody: ${{ steps.changelog.outputs.content }}
           releaseDraft: true
           prerelease: false
-          # Enable once the signing secrets above are configured; until
-          # then keep `false` so builds don't fail on missing signer.
-          includeUpdaterJson: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY != '' }}
+          # Requires the two TAURI_SIGNING_* secrets above to be set.
+          # If they're missing the build fails early — intentional, so
+          # we don't silently ship an unsigned release that would then
+          # break the in-app updater validation on user machines.
+          includeUpdaterJson: true
 
       # Package the standalone binaries into a portable zip so users who
       # don't want the NSIS/MSI installer can just unzip + run. Both exes

@@ -35,7 +35,8 @@
     "active": true,
     "targets": [
       "nsis",
-      "msi"
+      "msi",
+      "updater"
     ],
     "externalBin": [
       "binaries/madistack-system-helper"
