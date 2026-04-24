@@ -4,8 +4,14 @@
   "version": "0.1.0",
   "identifier": "dev.luanluciano.madistack",
   "build": {
-    "beforeDevCommand": { "script": "pnpm dev", "cwd": "../frontend" },
-    "beforeBuildCommand": { "script": "pnpm build", "cwd": "../frontend" },
+    "beforeDevCommand": {
+      "script": "pnpm dev",
+      "cwd": "../frontend"
+    },
+    "beforeBuildCommand": {
+      "script": "pnpm build",
+      "cwd": "../frontend"
+    },
     "devUrl": "http://localhost:1420",
     "frontendDist": "../frontend/dist"
   },
@@ -27,8 +33,13 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["nsis", "msi"],
-    "externalBin": ["binaries/madistack-system-helper"],
+    "targets": [
+      "nsis",
+      "msi"
+    ],
+    "externalBin": [
+      "binaries/madistack-system-helper"
+    ],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -46,7 +57,7 @@
       "endpoints": [
         "https://github.com/luanluciano93/madi-stack/releases/latest/download/latest.json"
       ],
-      "pubkey": "UPDATER_PUBKEY_PLACEHOLDER",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDFBNjdBMkU1QkI2NEY0MUYKUldRZjlHUzc1YUpuR2xPT0lwcWt6dnNmVEFHWmc2SHNTMElqVnE0RnlWZk9qQUlPRW05dnpIaXMK",
       "windows": {
         "installMode": "passive"
       }
