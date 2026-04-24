@@ -54,7 +54,7 @@
     />
     <div class="ml-3 hidden sm:block">
       <h1 class="text-lg font-bold leading-tight tracking-tight">MadiStack</h1>
-      <p class="text-xs text-zinc-500">v0.1.0 — dev</p>
+      <p class="text-xs text-zinc-500">v0.1.1 — dev</p>
     </div>
   </div>
 

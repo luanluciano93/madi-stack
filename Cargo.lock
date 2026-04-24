@@ -2203,7 +2203,7 @@ checksum = "c41e0c4fef86961ac6d6f8a82609f55f31b05e4fce149ac5710e439df7619ba4"
 
 [[package]]
 name = "madi-config-gen"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "madi-core",
  "serde",
@@ -2214,7 +2214,7 @@ dependencies = [
 
 [[package]]
 name = "madi-core"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "semver",
  "serde",
@@ -2223,7 +2223,7 @@ dependencies = [
 
 [[package]]
 name = "madi-downloader"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "bytes",
  "futures",
@@ -2242,7 +2242,7 @@ dependencies = [
 
 [[package]]
 name = "madi-firewall"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "serde",
  "serde_json",
@@ -2254,7 +2254,7 @@ dependencies = [
 
 [[package]]
 name = "madi-logs"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "notify",
  "parking_lot",
@@ -2266,7 +2266,7 @@ dependencies = [
 
 [[package]]
 name = "madi-services"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "madi-core",
  "madi-logs",
@@ -2284,7 +2284,7 @@ dependencies = [
 
 [[package]]
 name = "madi-sources"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "madi-core",
  "reqwest 0.12.28",
@@ -2299,7 +2299,7 @@ dependencies = [
 
 [[package]]
 name = "madi-state-store"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "madi-core",
  "semver",
@@ -2311,7 +2311,7 @@ dependencies = [
 
 [[package]]
 name = "madi-updater"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "madi-core",
  "madi-downloader",
@@ -2327,7 +2327,7 @@ dependencies = [
 
 [[package]]
 name = "madistack"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "directories",
@@ -2361,7 +2361,7 @@ dependencies = [
 
 [[package]]
 name = "madistack-cli"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "madi-config-gen",
@@ -2377,7 +2377,7 @@ dependencies = [
 
 [[package]]
 name = "madistack-system-helper"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "embed-resource",
  "madi-firewall",
