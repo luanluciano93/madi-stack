@@ -4,7 +4,7 @@
   import { check as checkUpdate, type Update } from '@tauri-apps/plugin-updater';
   import { relaunch } from '@tauri-apps/plugin-process';
 
-  const version = '0.1.1';
+  const version = '0.1.2';
   const repoUrl = 'https://github.com/luanluciano93/madi-stack';
   const authorUrl = 'https://github.com/luanluciano93';
 
