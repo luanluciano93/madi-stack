@@ -63,12 +63,7 @@ pub struct BackupInfo {
 /// Databases shipped with MariaDB/MySQL that we hide from the backup UI.
 /// Dumping `mysql` or `performance_schema` is rarely what the user wants
 /// and can trip on permissions or on the DB being in use.
-const SYSTEM_DATABASES: &[&str] = &[
-    "mysql",
-    "information_schema",
-    "performance_schema",
-    "sys",
-];
+const SYSTEM_DATABASES: &[&str] = &["mysql", "information_schema", "performance_schema", "sys"];
 
 fn mysqldump_path(install_dir: &Path) -> PathBuf {
     install_dir
@@ -345,7 +340,9 @@ fn finalize_backup(
 
     let _ = std::fs::remove_file(path);
     let msg = if status_success {
-        stream_result.err().unwrap_or_else(|| "unknown error".into())
+        stream_result
+            .err()
+            .unwrap_or_else(|| "unknown error".into())
     } else {
         let trimmed = stderr_output.trim();
         if trimmed.is_empty() {
