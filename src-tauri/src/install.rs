@@ -6,7 +6,7 @@
 
 use std::path::{Path, PathBuf};
 
-use madi_config_gen::{render_all, RenderContext, DEFAULT_PHP_EXTENSIONS};
+use madi_config_gen::{render_all, render_site, RenderContext, SiteSsl, DEFAULT_PHP_EXTENSIONS};
 use madi_core::{Component, PortConfig};
 use madi_downloader::{download_verified, extract_zip, Progress};
 use madi_sources::latest;
@@ -250,7 +250,78 @@ pub fn render_configs(install_dir: &Path, ports: PortConfig) -> anyhow::Result<(
     {
         ensure_pma_config(install_dir, ports)?;
     }
+    re_render_vhosts(install_dir, ports);
     Ok(())
+}
+
+/// Refresh every `config/sites-enabled/*.conf` against the current ports +
+/// install paths. Without this, vhosts created before a port change keep the
+/// old `listen`/`fastcgi_pass` values and end up routing to whatever happens
+/// to be on the stale port.
+///
+/// SSL state is read from disk (`config/certs/<name>/cert.pem` + `key.pem`) —
+/// the `.conf` itself doesn't tell us if it was rendered with the HTTPS arm,
+/// and rediscovering from the filesystem is simpler than threading metadata.
+///
+/// Best-effort: a single failing site is logged and skipped, the rest still
+/// get refreshed. Returning an error here would break `save_config` for an
+/// edge case the user didn't even cause.
+fn re_render_vhosts(install_dir: &Path, ports: PortConfig) {
+    let sites_enabled = install_dir.join("config").join("sites-enabled");
+    let Ok(entries) = std::fs::read_dir(&sites_enabled) else {
+        return;
+    };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.extension().and_then(|s| s.to_str()) != Some("conf") {
+            continue;
+        }
+        let Some(name) = path.file_stem().and_then(|s| s.to_str()) else {
+            continue;
+        };
+        if !is_safe_vhost_name(name) {
+            continue;
+        }
+        let site_root = install_dir.join("www").join(name);
+        if !site_root.is_dir() {
+            // www/<name>/ has been removed out from under us — leave the
+            // .conf alone; `vhost_disable` is the right path to clean it up.
+            continue;
+        }
+
+        let cert_dir = install_dir.join("config").join("certs").join(name);
+        let cert_path = cert_dir.join("cert.pem");
+        let key_path = cert_dir.join("key.pem");
+        let ssl = if cert_path.is_file() && key_path.is_file() {
+            Some(SiteSsl {
+                cert_path: &cert_path,
+                key_path: &key_path,
+            })
+        } else {
+            None
+        };
+
+        let ctx = RenderContext {
+            install_dir,
+            document_root: &site_root,
+            ports,
+            php_extensions: DEFAULT_PHP_EXTENSIONS,
+        };
+        if let Err(e) = render_site(&ctx, name, ssl, &path) {
+            tracing::warn!(site = %name, error = %e, "re_render_vhosts: render_site failed");
+        }
+    }
+}
+
+/// Mirror of `validate_vhost_name` in `commands.rs` — duplicated rather than
+/// shared because the install module is upstream of commands and we don't
+/// want a circular dep just to share three lines.
+fn is_safe_vhost_name(name: &str) -> bool {
+    !name.is_empty()
+        && name.len() <= 63
+        && name
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
 }
 
 /// Ensure `bin/phpmyadmin/config.inc.php` exists and matches the current
