@@ -3,9 +3,10 @@
   import { _ } from 'svelte-i18n';
   import { get } from 'svelte/store';
   import { open as shellOpen } from '@tauri-apps/plugin-shell';
-  import { ipc, type VhostDto } from '$lib/ipc';
+  import { ipc, type PortConfig, type VhostDto } from '$lib/ipc';
 
   let sites = $state<VhostDto[]>([]);
+  let ports = $state<PortConfig | null>(null);
   let loading = $state(true);
   let busy = $state<string | null>(null);
   let error = $state<string | null>(null);
@@ -13,12 +14,31 @@
 
   async function refresh() {
     try {
-      sites = await ipc.vhostList();
+      const [list, cfg] = await Promise.all([ipc.vhostList(), ipc.getConfig()]);
+      sites = list;
+      ports = cfg.ports;
     } catch (e) {
       error = String(e);
     } finally {
       loading = false;
     }
+  }
+
+  /// Resolve the public URL for a vhost. The HTTPS template hardcodes 443,
+  /// so the suffix is only needed for HTTP when `ports.http` was bumped off
+  /// 80 (USBWebserver / IIS / WSL holding the standard port).
+  function siteUrl(hostname: string, ssl: boolean): string {
+    if (ssl) return `https://${hostname}/`;
+    const httpPort = ports?.http ?? 80;
+    return httpPort === 80 ? `http://${hostname}/` : `http://${hostname}:${httpPort}/`;
+  }
+
+  /// Same as `siteUrl` but without the scheme/path — for showing the
+  /// authority inline so the user can see the port at a glance.
+  function siteAuthority(hostname: string, ssl: boolean): string {
+    if (ssl) return hostname;
+    const httpPort = ports?.http ?? 80;
+    return httpPort === 80 ? hostname : `${hostname}:${httpPort}`;
   }
 
   function flashSuccess(msg: string) {
@@ -73,8 +93,7 @@
     // plugin-shell routes http(s):// URLs to the OS default browser —
     // window.open inside the webview would try to navigate Tauri's own
     // WebView2 away from the app UI.
-    const scheme = ssl ? 'https' : 'http';
-    void shellOpen(`${scheme}://${hostname}/`);
+    void shellOpen(siteUrl(hostname, ssl));
   }
 
   onMount(() => {
@@ -122,7 +141,7 @@
           <div class="min-w-0 flex-1">
             <div class="font-medium">{site.name}</div>
             <div class="text-xs text-zinc-500">
-              <span class="font-mono">{site.hostname}</span>
+              <span class="font-mono">{siteAuthority(site.hostname, site.ssl)}</span>
               · {site.enabled
                 ? site.ssl
                   ? $_('sites.active_https')
@@ -135,7 +154,7 @@
               type="button"
               onclick={() => openInBrowser(site.hostname, site.ssl)}
               class="rounded-md border border-zinc-700 px-3 py-1.5 text-xs text-zinc-200 hover:bg-zinc-800"
-              title={site.ssl ? `https://${site.hostname}/` : `http://${site.hostname}/`}
+              title={siteUrl(site.hostname, site.ssl)}
             >
               localhost
             </button>
