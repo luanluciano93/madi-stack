@@ -84,7 +84,16 @@
     "firewall_removed": "规则已移除。",
     "port_in_use_by_self": "被 MadiStack 自身占用",
     "port_occupied_unknown": "被未知进程占用",
-    "port_occupied_by": "被 pid {pid} ({name}) 占用"
+    "port_occupied_by": "被 pid {pid} ({name}) 占用",
+    "mariadb_root_password": {
+      "legend": "MariaDB root password",
+      "label": "Password",
+      "show": "Show",
+      "hide": "Hide",
+      "copied": "Copied!",
+      "hint": "Use 'root' as the user when connecting from PHP, the CLI or external tools.",
+      "not_initialized": "MariaDB hasn't been initialized yet. Start the service at least once to generate the password."
+    }
   },
   "sites": {
     "title": "站点",

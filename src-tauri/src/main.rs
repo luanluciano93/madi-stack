@@ -104,6 +104,7 @@ fn main() {
             commands::service_log_path,
             commands::service_pid,
             commands::pma_install_info,
+            commands::mariadb_root_password,
             commands::open_path,
             commands::open_terminal,
             commands::mkcert_status,

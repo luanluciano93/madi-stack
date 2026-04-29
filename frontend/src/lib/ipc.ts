@@ -134,6 +134,7 @@ export const ipc = {
   openPath: (path: string) => invoke<void>('open_path', { path }),
   openTerminal: (cwd: string) => invoke<void>('open_terminal', { cwd }),
   pmaInstallInfo: () => invoke<PmaInstallInfo>('pma_install_info'),
+  mariadbRootPassword: () => invoke<string | null>('mariadb_root_password'),
   mariadbListDatabases: () => invoke<string[]>('mariadb_list_databases'),
   mariadbListBackups: () => invoke<BackupInfo[]>('mariadb_list_backups'),
   mariadbBackup: (database: string) => invoke<string>('mariadb_backup', { database }),

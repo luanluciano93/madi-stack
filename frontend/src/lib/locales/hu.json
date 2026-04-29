@@ -84,7 +84,16 @@
     "firewall_removed": "Szabályok eltávolítva.",
     "port_in_use_by_self": "a MadiStack maga használja",
     "port_occupied_unknown": "ismeretlen folyamat foglalja",
-    "port_occupied_by": "pid {pid} ({name}) foglalja"
+    "port_occupied_by": "pid {pid} ({name}) foglalja",
+    "mariadb_root_password": {
+      "legend": "MariaDB root password",
+      "label": "Password",
+      "show": "Show",
+      "hide": "Hide",
+      "copied": "Copied!",
+      "hint": "Use 'root' as the user when connecting from PHP, the CLI or external tools.",
+      "not_initialized": "MariaDB hasn't been initialized yet. Start the service at least once to generate the password."
+    }
   },
   "sites": {
     "title": "Oldalak",

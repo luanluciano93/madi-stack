@@ -84,7 +84,16 @@
     "firewall_removed": "Kurallar kaldırıldı.",
     "port_in_use_by_self": "MadiStack tarafından kullanılıyor",
     "port_occupied_unknown": "bilinmeyen bir süreç tarafından meşgul",
-    "port_occupied_by": "pid {pid} ({name}) tarafından meşgul"
+    "port_occupied_by": "pid {pid} ({name}) tarafından meşgul",
+    "mariadb_root_password": {
+      "legend": "MariaDB root password",
+      "label": "Password",
+      "show": "Show",
+      "hide": "Hide",
+      "copied": "Copied!",
+      "hint": "Use 'root' as the user when connecting from PHP, the CLI or external tools.",
+      "not_initialized": "MariaDB hasn't been initialized yet. Start the service at least once to generate the password."
+    }
   },
   "sites": {
     "title": "Siteler",
