@@ -48,6 +48,12 @@ mod imp {
     };
     use windows::Win32::Networking::WinSock::AF_INET;
 
+    /// `MIB_TCP_STATE_LISTEN` from `tcpmib.h`. windows-rs only exposes the
+    /// state values as a strongly-typed enum tied to a different table type,
+    /// so we use the raw constant. See:
+    /// <https://learn.microsoft.com/windows/win32/api/tcpmib/ne-tcpmib-mib_tcp_state>
+    const MIB_TCP_STATE_LISTEN: u32 = 2;
+
     pub fn port_occupier(port: u16) -> Option<PortOccupier> {
         let pid = find_owning_pid(port)?;
         let mut sys = System::new();
@@ -127,9 +133,17 @@ mod imp {
             return None;
         }
 
+        // Filter on LISTEN state. Windows keeps TIME_WAIT/CLOSE_WAIT residue
+        // for the same `(local_addr, local_port)` after a service restart, and
+        // those rows carry `dwOwningPid = 0` (the System Idle Process). Without
+        // this filter we'd return PID 0 for any port that recently saw a
+        // connection close, even when the real listener is still bound.
         for i in 0..count {
             // SAFETY: i < count and the buffer is large enough (checked above).
             let row = unsafe { &*row0_ptr.add(i) };
+            if row.dwState != MIB_TCP_STATE_LISTEN {
+                continue;
+            }
             // dwLocalPort is a DWORD with the port (network byte order) in
             // the low word. Extract the low 16 bits safely, then swap from
             // network to host order.
