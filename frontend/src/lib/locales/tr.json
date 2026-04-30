@@ -102,7 +102,14 @@
       "drift_success": "Parola senkronize edildi.",
       "resync_error_access_denied": "Yanlış parola — MariaDB reddetti.",
       "resync_error_unreachable": "MariaDB yanıt vermiyor. Servisi başlat ve tekrar dene.",
-      "resync_error_empty": "Parolayı gir."
+      "resync_error_empty": "Parolayı gir.",
+      "reset_hint": "Parolayı unuttun mu? skip-grant ile sıfırla: MadiStack MariaDB'yi ~5s durdurur, yeni rastgele bir parola oluşturur ve tekrar başlatır.",
+      "reset_via_skip_grant": "skip-grant ile sıfırla",
+      "resetting": "Sıfırlanıyor…",
+      "reset_confirm": "Bu, root parolasını sıfırlamak için MariaDB'yi ~5 saniye durduracak. Açık bağlantılar (PHP, CLI) kesilecek. Devam edilsin mi?",
+      "reset_error_binary_missing": "mysqld.exe veya mysql.exe bulunamadı — MariaDB'yi yeniden kur.",
+      "reset_error_boot_timeout": "Kurtarma sunucusu zamanında başlamadı. Birkaç saniye sonra tekrar dene.",
+      "reset_error_alter_failed": "ALTER USER başarısız oldu. Ayrıntılar için MariaDB günlüklerine bak."
     }
   },
   "sites": {

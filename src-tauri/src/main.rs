@@ -120,6 +120,7 @@ fn main() {
             commands::mariadb_root_password,
             commands::mariadb_password_check,
             commands::mariadb_password_save,
+            commands::mariadb_password_reset,
             commands::open_path,
             commands::open_terminal,
             commands::mkcert_status,

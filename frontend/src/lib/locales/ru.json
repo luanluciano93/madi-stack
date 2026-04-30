@@ -102,7 +102,14 @@
       "drift_success": "Пароль синхронизирован.",
       "resync_error_access_denied": "Неверный пароль — MariaDB его отклонил.",
       "resync_error_unreachable": "MariaDB не отвечает. Запустите службу и повторите.",
-      "resync_error_empty": "Введите пароль."
+      "resync_error_empty": "Введите пароль.",
+      "reset_hint": "Забыли пароль? Выполните сброс через skip-grant: MadiStack остановит MariaDB на ~5с, задаст новый случайный пароль и снова запустит.",
+      "reset_via_skip_grant": "Сбросить через skip-grant",
+      "resetting": "Сброс…",
+      "reset_confirm": "MariaDB будет остановлен на ~5 секунд для сброса пароля root. Открытые соединения (PHP, CLI) будут разорваны. Продолжить?",
+      "reset_error_binary_missing": "mysqld.exe или mysql.exe не найдены — переустановите MariaDB.",
+      "reset_error_boot_timeout": "Сервер восстановления не запустился вовремя. Попробуйте через несколько секунд.",
+      "reset_error_alter_failed": "ALTER USER не удался. Посмотрите логи MariaDB."
     }
   },
   "sites": {

@@ -7,6 +7,7 @@
   import { tour } from '$lib/tour';
   import {
     ipc,
+    onPasswordReset,
     onServiceStatus,
     type AppConfigDto,
     type Language,
@@ -73,6 +74,14 @@
   /// flips the status to `in_sync`.
   let resyncSucceeded = $state(false);
 
+  /// State for the "I lost the password" recovery: skip-grant-tables
+  /// reset. Lives next to `resync*` because they're sibling fixes for
+  /// the same drift condition — but they can't share spinners since
+  /// either may run while the other's button stays clickable.
+  let resetBusy = $state(false);
+  let resetError = $state<string | null>(null);
+  let resetSucceeded = $state(false);
+
   async function refreshMariadbPassword() {
     try {
       mariadbPassword = await ipc.mariadbRootPassword();
@@ -125,6 +134,51 @@
     }
   }
 
+  /// 24-char alphanumeric, matching `madi_services::secrets::generate_password`.
+  /// Generated client-side so the user gets a strong default without
+  /// having to invent one mid-recovery; they can still copy it from
+  /// "Revelar senha" once the reset finishes.
+  function generateRandomPassword(): string {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const buf = new Uint32Array(24);
+    crypto.getRandomValues(buf);
+    return Array.from(buf, (n) => chars[n % chars.length]).join('');
+  }
+
+  async function resetMariadbPassword() {
+    if (resetBusy) return;
+    const t = get(_);
+    if (!confirm(t('config.mariadb_root_password.reset_confirm'))) return;
+    resetBusy = true;
+    resetError = null;
+    resetSucceeded = false;
+    try {
+      await ipc.mariadbPasswordReset(generateRandomPassword());
+      resetSucceeded = true;
+      // Refresh both: the freshly-set password value is now what
+      // `mariadb_root_password` returns, and the probe should flip to
+      // `in_sync`, hiding the banner.
+      await Promise.all([refreshMariadbPassword(), refreshMariadbPasswordStatus()]);
+    } catch (e) {
+      const raw = String(e);
+      // The Rust side returns stable string keys (see
+      // `mariadb_password_reset` docs). Map the few we want to localise;
+      // anything else falls through as the raw error so unexpected
+      // branches stay debuggable.
+      if (raw.includes('binary_missing')) {
+        resetError = t('config.mariadb_root_password.reset_error_binary_missing');
+      } else if (raw.includes('skip_grant_boot_timeout')) {
+        resetError = t('config.mariadb_root_password.reset_error_boot_timeout');
+      } else if (raw.includes('alter_failed')) {
+        resetError = t('config.mariadb_root_password.reset_error_alter_failed');
+      } else {
+        resetError = raw;
+      }
+    } finally {
+      resetBusy = false;
+    }
+  }
+
   async function copyMariadbPassword() {
     if (!mariadbPassword) return;
     try {
@@ -162,6 +216,10 @@
   /// changed their password through phpMyAdmin and then restarts the
   /// service sees the banner without having to leave/re-enter the tab.
   let unlistenServiceStatus: (() => void) | null = null;
+  /// `mariadb-password-reset` listener. Used so that even when a
+  /// concurrent reset runs from somewhere else (or this tab is opened
+  /// mid-reset) the banner reflects the result without manual refresh.
+  let unlistenPasswordReset: (() => void) | null = null;
 
   onMount(async () => {
     try {
@@ -182,12 +240,22 @@
         setTimeout(() => void refreshMariadbPasswordStatus(), 800);
       }
     });
+    unlistenPasswordReset = await onPasswordReset((ev) => {
+      if (ev.phase === 'done') {
+        void refreshMariadbPassword();
+        void refreshMariadbPasswordStatus();
+      }
+    });
   });
 
   onDestroy(() => {
     if (unlistenServiceStatus) {
       unlistenServiceStatus();
       unlistenServiceStatus = null;
+    }
+    if (unlistenPasswordReset) {
+      unlistenPasswordReset();
+      unlistenPasswordReset = null;
     }
   });
 
@@ -438,8 +506,32 @@
           {#if resyncError}
             <p class="mt-2 text-xs text-red-300">{resyncError}</p>
           {/if}
+
+          <!-- Skip-grant escape hatch: for users who don't have the
+               current password and can't fill the input above. Stops
+               MariaDB for ~5–10s and ALTERs root to a freshly-generated
+               value, then restarts. Confirm dialog gates it because
+               open PHP/CLI connections will be dropped. -->
+          <div class="mt-3 border-t border-amber-700/40 pt-2">
+            <p class="text-xs text-amber-200/80">
+              {$_('config.mariadb_root_password.reset_hint')}
+            </p>
+            <button
+              type="button"
+              onclick={resetMariadbPassword}
+              disabled={resetBusy}
+              class="mt-1 rounded-md border border-amber-700 bg-transparent px-3 py-1 text-xs text-amber-200 hover:bg-amber-900/40 disabled:opacity-40"
+            >
+              {resetBusy
+                ? $_('config.mariadb_root_password.resetting')
+                : $_('config.mariadb_root_password.reset_via_skip_grant')}
+            </button>
+            {#if resetError}
+              <p class="mt-2 text-xs text-red-300">{resetError}</p>
+            {/if}
+          </div>
         </div>
-      {:else if resyncSucceeded}
+      {:else if resyncSucceeded || resetSucceeded}
         <p class="text-xs text-emerald-400">
           {$_('config.mariadb_root_password.drift_success')}
         </p>

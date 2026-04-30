@@ -102,7 +102,14 @@
       "drift_success": "Parole sinhronizēta.",
       "resync_error_access_denied": "Nepareiza parole — MariaDB to noraidīja.",
       "resync_error_unreachable": "MariaDB neatbild. Palaid pakalpojumu un mēģini vēlreiz.",
-      "resync_error_empty": "Ievadi paroli."
+      "resync_error_empty": "Ievadi paroli.",
+      "reset_hint": "Aizmirsi paroli? Veic atiestati ar skip-grant: MadiStack apturēs MariaDB uz ~5s, izveidos jaunu nejaušu paroli un palaidīs vēlreiz.",
+      "reset_via_skip_grant": "Atiestatīt ar skip-grant",
+      "resetting": "Atiestatīšana…",
+      "reset_confirm": "MariaDB tiks apturēts uz ~5 sekundēm, lai atiestatītu root paroli. Atvērtie savienojumi (PHP, CLI) tiks pārtraukti. Turpināt?",
+      "reset_error_binary_missing": "mysqld.exe vai mysql.exe nav atrasts — pārinstalē MariaDB.",
+      "reset_error_boot_timeout": "Atkopšanas serveris nepalaidās laikā. Mēģini vēlreiz pēc dažām sekundēm.",
+      "reset_error_alter_failed": "ALTER USER neizdevās. Detaļām skaties MariaDB žurnālus."
     }
   },
   "sites": {

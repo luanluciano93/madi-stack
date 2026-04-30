@@ -102,7 +102,14 @@
       "drift_success": "Wachtwoord gesynchroniseerd.",
       "resync_error_access_denied": "Verkeerd wachtwoord — MariaDB weigerde het.",
       "resync_error_unreachable": "MariaDB reageert niet. Start de service en probeer opnieuw.",
-      "resync_error_empty": "Voer het wachtwoord in."
+      "resync_error_empty": "Voer het wachtwoord in.",
+      "reset_hint": "Wachtwoord vergeten? Voer een skip-grant-reset uit: MadiStack stopt MariaDB ~5s, stelt een nieuw willekeurig wachtwoord in en start het opnieuw.",
+      "reset_via_skip_grant": "Reset via skip-grant",
+      "resetting": "Resetten…",
+      "reset_confirm": "Dit stopt MariaDB ~5 seconden om het root-wachtwoord te resetten. Openstaande verbindingen (PHP, CLI) worden verbroken. Doorgaan?",
+      "reset_error_binary_missing": "mysqld.exe of mysql.exe niet gevonden — installeer MariaDB opnieuw.",
+      "reset_error_boot_timeout": "De herstelserver kwam niet op tijd op. Probeer het over een paar seconden opnieuw.",
+      "reset_error_alter_failed": "ALTER USER is mislukt. Bekijk de MariaDB-logs voor details."
     }
   },
   "sites": {

@@ -321,6 +321,114 @@ pub async fn mariadb_password_save(
     crate::mariadb_auth::save_password(&install_dir, port, &password).await
 }
 
+/// Skip-grant-tables recovery for users who have lost the root password
+/// entirely (forgot it, never knew it). Stops the supervised mysqld,
+/// runs the canonical MariaDB recovery dance to set `new_password` on
+/// `root@localhost`, persists it to secrets, then restarts the supervised
+/// mysqld if it had been running. Disruptive — the UI must confirm
+/// before invoking, since open PHP/CLI connections get dropped.
+///
+/// Stable error keys: `"empty_password"`, `"invalid_password"`,
+/// `"binary_missing"`, `"skip_grant_boot_timeout"`, `"alter_failed:<msg>"`,
+/// `"spawn:<msg>"`, `"stop:<msg>"`, `"restart:<msg>"`,
+/// `"read_secrets:<msg>"`, `"write_secrets:<msg>"`.
+///
+/// Emits `mariadb-password-reset` events (`{ phase: "running"|"done"|"error", message? }`)
+/// so the UI can render a progress indicator across the ~5–10s the dance
+/// takes.
+#[tauri::command]
+pub async fn mariadb_password_reset(
+    new_password: String,
+    state: tauri::State<'_, AppState>,
+    app: AppHandle,
+) -> Result<(), String> {
+    let install_dir = state.supervisor.install_dir().to_path_buf();
+    let port = state.stored.read().ports.mariadb;
+    let was_running = matches!(
+        state.supervisor.status(Component::MariaDb),
+        ServiceStatus::Running
+    );
+
+    let _ = app.emit(
+        PASSWORD_RESET_EVENT,
+        PasswordResetEvent {
+            phase: PasswordResetPhase::Running,
+            message: None,
+        },
+    );
+
+    let result = run_password_reset(
+        &install_dir,
+        port,
+        &new_password,
+        &state.supervisor,
+        was_running,
+    )
+    .await;
+
+    let final_event = match &result {
+        Ok(()) => PasswordResetEvent {
+            phase: PasswordResetPhase::Done,
+            message: None,
+        },
+        Err(e) => PasswordResetEvent {
+            phase: PasswordResetPhase::Error,
+            message: Some(e.clone()),
+        },
+    };
+    let _ = app.emit(PASSWORD_RESET_EVENT, final_event);
+    result
+}
+
+/// Internal helper extracted so the command stays small and the
+/// orchestration steps stop → reset → save secrets → restart can be
+/// read top-to-bottom. Errors propagate with the same stable string
+/// keys [`mariadb_password_reset`] documents.
+async fn run_password_reset(
+    install_dir: &std::path::Path,
+    port: u16,
+    new_password: &str,
+    supervisor: &madi_services::Supervisor,
+    was_running: bool,
+) -> Result<(), String> {
+    if was_running {
+        supervisor
+            .stop(Component::MariaDb)
+            .await
+            .map_err(|e| format!("stop:{e}"))?;
+    }
+    crate::mariadb_auth::reset_via_skip_grant(install_dir, port, new_password).await?;
+    crate::mariadb_auth::save_secret_unverified(install_dir, new_password)?;
+    if was_running {
+        supervisor
+            .start(Component::MariaDb)
+            .await
+            .map_err(|e| format!("restart:{e}"))?;
+    }
+    Ok(())
+}
+
+pub const PASSWORD_RESET_EVENT: &str = "mariadb-password-reset";
+
+#[derive(Debug, Clone, Copy, serde::Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum PasswordResetPhase {
+    /// Reset is in progress (we've stopped mysqld and started the
+    /// skip-grant-tables recovery server).
+    Running,
+    /// New password persisted, supervised mysqld back up.
+    Done,
+    /// Reset failed — see the `message` field for the cause.
+    Error,
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct PasswordResetEvent {
+    pub phase: PasswordResetPhase,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub message: Option<String>,
+}
+
 /// Return the absolute install directory (where `madistack.exe` lives).
 /// Used by the "Abrir pasta" button in the sidebar.
 #[tauri::command]

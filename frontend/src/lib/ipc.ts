@@ -138,6 +138,8 @@ export const ipc = {
   mariadbRootPassword: () => invoke<string | null>('mariadb_root_password'),
   mariadbPasswordCheck: () => invoke<MariadbPasswordStatus>('mariadb_password_check'),
   mariadbPasswordSave: (password: string) => invoke<void>('mariadb_password_save', { password }),
+  mariadbPasswordReset: (newPassword: string) =>
+    invoke<void>('mariadb_password_reset', { newPassword }),
   mariadbListDatabases: () => invoke<string[]>('mariadb_list_databases'),
   mariadbListBackups: () => invoke<BackupInfo[]>('mariadb_list_backups'),
   mariadbBackup: (database: string) => invoke<string>('mariadb_backup', { database }),
@@ -182,6 +184,20 @@ export type MariadbPasswordStatus =
   | { status: 'unreachable' }
   | { status: 'no_secret' }
   | { status: 'probe_error' };
+
+/// Lifecycle of the skip-grant-tables password reset, emitted on
+/// `mariadb-password-reset`. `running` fires once when the dance starts;
+/// then either `done` (mysqld back up with the new value) or `error`.
+export type PasswordResetPhase = 'running' | 'done' | 'error';
+
+export interface PasswordResetEvent {
+  phase: PasswordResetPhase;
+  message?: string;
+}
+
+export function onPasswordReset(cb: (event: PasswordResetEvent) => void): Promise<UnlistenFn> {
+  return listen<PasswordResetEvent>('mariadb-password-reset', (e) => cb(e.payload));
+}
 
 export interface VhostDto {
   name: string;
