@@ -82,6 +82,12 @@ pub struct ReleaseInfo {
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct PortConfig {
     pub http: u16,
+    /// HTTPS listener port for sites with SSL enabled. Defaults to 443 so a
+    /// fresh install behaves like the standard, but can be changed when 443
+    /// is taken (WSL2's `wslrelay`, IIS HTTPS bindings, other dev stacks).
+    /// Read by `site-default.conf.tera` and the frontend URL builder.
+    #[serde(default = "default_https_port")]
+    pub https: u16,
     pub mariadb: u16,
     pub php_fcgi: u16,
     /// Address the public services (HTTP, MariaDB) bind to.
@@ -98,10 +104,15 @@ fn default_bind_address() -> Ipv4Addr {
     Ipv4Addr::LOCALHOST
 }
 
+fn default_https_port() -> u16 {
+    443
+}
+
 impl Default for PortConfig {
     fn default() -> Self {
         Self {
             http: 80,
+            https: default_https_port(),
             mariadb: 3306,
             php_fcgi: 9000,
             bind_address: default_bind_address(),

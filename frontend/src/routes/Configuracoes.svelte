@@ -74,7 +74,9 @@
     }
   }
 
-  async function refreshPort(key: 'http' | 'mariadb' | 'php_fcgi', value: number) {
+  type PortKey = 'http' | 'https' | 'mariadb' | 'php_fcgi';
+
+  async function refreshPort(key: PortKey, value: number) {
     if (!Number.isFinite(value) || value <= 0 || value > 65535) return;
     try {
       inspections[key] = await ipc.portInspect(value);
@@ -87,6 +89,7 @@
     if (!config) return;
     await Promise.all([
       refreshPort('http', config.ports.http),
+      refreshPort('https', config.ports.https),
       refreshPort('mariadb', config.ports.mariadb),
       refreshPort('php_fcgi', config.ports.php_fcgi),
     ]);
@@ -126,7 +129,7 @@
     kind: 'self' | 'conflict';
   }
 
-  function warnFor(key: 'http' | 'mariadb' | 'php_fcgi'): PortWarning | null {
+  function warnFor(key: PortKey): PortWarning | null {
     const ins = inspections[key];
     if (!ins || ins.free) return null;
     const o = ins.occupier;
@@ -169,6 +172,23 @@
         />
         {#if warnFor('http')}
           {@const w = warnFor('http')!}
+          <span class="text-xs {w.kind === 'self' ? 'text-emerald-400' : 'text-amber-400'}"
+            >{w.text}</span
+          >
+        {/if}
+      </label>
+      <label class="flex flex-col gap-1 text-sm">
+        <span class="text-zinc-400">{$_('config.port_https')}</span>
+        <input
+          type="number"
+          bind:value={config.ports.https}
+          onchange={() => refreshPort('https', config!.ports.https)}
+          min="1"
+          max="65535"
+          class="rounded-md border border-zinc-800 bg-zinc-900 px-3 py-2"
+        />
+        {#if warnFor('https')}
+          {@const w = warnFor('https')!}
           <span class="text-xs {w.kind === 'self' ? 'text-emerald-400' : 'text-amber-400'}"
             >{w.text}</span
           >

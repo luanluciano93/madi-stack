@@ -61,6 +61,7 @@
     "title": "Iestatījumi",
     "subtitle": "Pielāgo portus un vispārīgos iestatījumus. Portu izmaiņas stājas spēkā servisa nākamajā startā.",
     "port_http": "HTTP ports",
+    "port_https": "HTTPS ports",
     "port_mariadb": "MariaDB ports",
     "port_php": "PHP FastCGI ports",
     "bind_address": "Bind adrese",

@@ -61,6 +61,7 @@
     "title": "Настройки",
     "subtitle": "Настройка портов и общих параметров. Изменения портов применяются при следующем запуске службы.",
     "port_http": "Порт HTTP",
+    "port_https": "HTTPS-порт",
     "port_mariadb": "Порт MariaDB",
     "port_php": "Порт PHP FastCGI",
     "bind_address": "Адрес привязки",

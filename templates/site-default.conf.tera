@@ -6,11 +6,11 @@
 server {
     listen {{ ports.bind_address }}:{{ ports.http }};
     server_name {{ site_name }}.test;
-    return 301 https://$host$request_uri;
+    return 301 https://$host{% if ports.https != 443 %}:{{ ports.https }}{% endif %}$request_uri;
 }
 
 server {
-    listen {{ ports.bind_address }}:443 ssl;
+    listen {{ ports.bind_address }}:{{ ports.https }} ssl;
     server_name {{ site_name }}.test;
 
     ssl_certificate "{{ ssl_cert }}";

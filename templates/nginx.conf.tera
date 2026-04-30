@@ -13,6 +13,8 @@ http {
     sendfile        on;
     keepalive_timeout 65;
 
+    client_max_body_size 64M;
+
     access_log "{{ install_dir }}/logs/nginx/access.log";
 
     server {

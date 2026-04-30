@@ -61,6 +61,7 @@
     "title": "Beállítások",
     "subtitle": "Portok és általános beállítások módosítása. A portváltozások a szolgáltatás következő indításakor lépnek érvénybe.",
     "port_http": "HTTP port",
+    "port_https": "HTTPS port",
     "port_mariadb": "MariaDB port",
     "port_php": "PHP FastCGI port",
     "bind_address": "Bind-cím",

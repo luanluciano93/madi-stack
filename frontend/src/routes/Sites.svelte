@@ -24,11 +24,15 @@
     }
   }
 
-  /// Resolve the public URL for a vhost. The HTTPS template hardcodes 443,
-  /// so the suffix is only needed for HTTP when `ports.http` was bumped off
-  /// 80 (USBWebserver / IIS / WSL holding the standard port).
+  /// Resolve the public URL for a vhost. The port suffix is only included
+  /// when the corresponding `ports.*` was bumped off the standard (80 for
+  /// HTTP, 443 for HTTPS) — usually because something else holds it
+  /// (USBWebserver / IIS on 80, WSL `wslrelay` on 443).
   function siteUrl(hostname: string, ssl: boolean): string {
-    if (ssl) return `https://${hostname}/`;
+    if (ssl) {
+      const httpsPort = ports?.https ?? 443;
+      return httpsPort === 443 ? `https://${hostname}/` : `https://${hostname}:${httpsPort}/`;
+    }
     const httpPort = ports?.http ?? 80;
     return httpPort === 80 ? `http://${hostname}/` : `http://${hostname}:${httpPort}/`;
   }
@@ -36,7 +40,10 @@
   /// Same as `siteUrl` but without the scheme/path — for showing the
   /// authority inline so the user can see the port at a glance.
   function siteAuthority(hostname: string, ssl: boolean): string {
-    if (ssl) return hostname;
+    if (ssl) {
+      const httpsPort = ports?.https ?? 443;
+      return httpsPort === 443 ? hostname : `${hostname}:${httpsPort}`;
+    }
     const httpPort = ports?.http ?? 80;
     return httpPort === 80 ? hostname : `${hostname}:${httpPort}`;
   }

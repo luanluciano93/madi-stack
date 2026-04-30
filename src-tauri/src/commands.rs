@@ -368,11 +368,16 @@ pub async fn save_config(
 }
 
 fn validate_ports(p: &PortConfig) -> Result<(), String> {
-    if p.http == 0 || p.mariadb == 0 || p.php_fcgi == 0 {
+    if p.http == 0 || p.https == 0 || p.mariadb == 0 || p.php_fcgi == 0 {
         return Err("ports must be non-zero".into());
     }
-    if p.http == p.mariadb || p.http == p.php_fcgi || p.mariadb == p.php_fcgi {
-        return Err("ports must be distinct".into());
+    let all = [p.http, p.https, p.mariadb, p.php_fcgi];
+    for i in 0..all.len() {
+        for j in (i + 1)..all.len() {
+            if all[i] == all[j] {
+                return Err("ports must be distinct".into());
+            }
+        }
     }
     Ok(())
 }
