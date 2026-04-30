@@ -102,7 +102,14 @@
       "drift_success": "Parola sincronizată.",
       "resync_error_access_denied": "Parolă incorectă — MariaDB a respins-o.",
       "resync_error_unreachable": "MariaDB nu răspunde. Pornește serviciul și încearcă din nou.",
-      "resync_error_empty": "Introdu parola."
+      "resync_error_empty": "Introdu parola.",
+      "reset_hint": "Ai uitat parola? Rulează un reset prin skip-grant: MadiStack oprește MariaDB ~5s, generează o parolă aleatoare nouă și-l repornește.",
+      "reset_via_skip_grant": "Resetare prin skip-grant",
+      "resetting": "Se resetează…",
+      "reset_confirm": "MariaDB va fi oprit ~5 secunde pentru a reseta parola root. Conexiunile deschise (PHP, CLI) vor fi întrerupte. Continuați?",
+      "reset_error_binary_missing": "mysqld.exe sau mysql.exe lipsesc — reinstalează MariaDB.",
+      "reset_error_boot_timeout": "Serverul de recuperare nu a pornit la timp. Încearcă din nou peste câteva secunde.",
+      "reset_error_alter_failed": "ALTER USER a eșuat. Vezi jurnalele MariaDB pentru detalii."
     }
   },
   "sites": {

@@ -102,7 +102,14 @@
       "drift_success": "密码已同步。",
       "resync_error_access_denied": "密码错误 — MariaDB 拒绝了。",
       "resync_error_unreachable": "MariaDB 无响应。请启动服务后重试。",
-      "resync_error_empty": "请输入密码。"
+      "resync_error_empty": "请输入密码。",
+      "reset_hint": "忘记密码？通过 skip-grant 重置：MadiStack 会停止 MariaDB 约 5 秒，生成一个新的随机密码，然后重新启动。",
+      "reset_via_skip_grant": "通过 skip-grant 重置",
+      "resetting": "重置中…",
+      "reset_confirm": "这将停止 MariaDB 约 5 秒以重置 root 密码。已打开的连接（PHP、CLI）会被断开。是否继续？",
+      "reset_error_binary_missing": "找不到 mysqld.exe 或 mysql.exe — 请重新安装 MariaDB。",
+      "reset_error_boot_timeout": "恢复服务器未及时启动。请稍后再试。",
+      "reset_error_alter_failed": "ALTER USER 失败。请查看 MariaDB 日志了解详情。"
     }
   },
   "sites": {

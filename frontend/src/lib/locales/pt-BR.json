@@ -102,7 +102,14 @@
       "drift_success": "Senha sincronizada.",
       "resync_error_access_denied": "Senha incorreta — o MariaDB recusou.",
       "resync_error_unreachable": "MariaDB não está respondendo. Suba o serviço e tente de novo.",
-      "resync_error_empty": "Digite a senha."
+      "resync_error_empty": "Digite a senha.",
+      "reset_hint": "Esqueceu a senha? Faça um reset via skip-grant: o MadiStack para o MariaDB por ~5s, gera uma nova senha aleatória e sobe de novo.",
+      "reset_via_skip_grant": "Resetar via skip-grant",
+      "resetting": "Resetando…",
+      "reset_confirm": "Vou parar o MariaDB por ~5 segundos para resetar a senha do root. Conexões abertas (PHP, CLI) serão derrubadas. Continuar?",
+      "reset_error_binary_missing": "mysqld.exe ou mysql.exe não encontrados — reinstale o MariaDB.",
+      "reset_error_boot_timeout": "O servidor de recuperação não subiu a tempo. Tente novamente em alguns segundos.",
+      "reset_error_alter_failed": "ALTER USER falhou. Veja os logs do MariaDB para detalhes."
     }
   },
   "sites": {

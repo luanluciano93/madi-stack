@@ -102,7 +102,14 @@
       "drift_success": "Passwort synchronisiert.",
       "resync_error_access_denied": "Falsches Passwort — MariaDB hat es abgelehnt.",
       "resync_error_unreachable": "MariaDB antwortet nicht. Starte den Dienst und versuche es erneut.",
-      "resync_error_empty": "Gib das Passwort ein."
+      "resync_error_empty": "Gib das Passwort ein.",
+      "reset_hint": "Passwort vergessen? Führe einen skip-grant-Reset aus: MadiStack stoppt MariaDB ~5s, setzt ein neues Zufallspasswort und startet wieder.",
+      "reset_via_skip_grant": "Per skip-grant zurücksetzen",
+      "resetting": "Wird zurückgesetzt…",
+      "reset_confirm": "MariaDB wird ~5 Sekunden gestoppt, um das Root-Passwort zurückzusetzen. Offene Verbindungen (PHP, CLI) werden getrennt. Fortfahren?",
+      "reset_error_binary_missing": "mysqld.exe oder mysql.exe nicht gefunden — installiere MariaDB neu.",
+      "reset_error_boot_timeout": "Der Recovery-Server ist nicht rechtzeitig gestartet. Versuche es in ein paar Sekunden erneut.",
+      "reset_error_alter_failed": "ALTER USER ist fehlgeschlagen. Prüfe die MariaDB-Logs für Details."
     }
   },
   "sites": {

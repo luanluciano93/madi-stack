@@ -192,3 +192,285 @@ async fn try_login(
         Ok(LoginOutcome::Unreachable)
     }
 }
+
+// --- Skip-grant-tables recovery -------------------------------------------
+//
+// "I lost the password entirely" escape hatch: the user can't type the
+// current root password (forgot it, never knew it), so [`save_password`]
+// is unreachable. The canonical recovery is the documented MariaDB dance:
+// stop the running mysqld, start a private one with `--skip-grant-tables`
+// (which disables the privilege system), connect as root with no password,
+// FLUSH PRIVILEGES + ALTER USER to set a new value, shut the recovery
+// server down, then bring the supervised mysqld back up.
+//
+// [`reset_via_skip_grant`] handles the inner two phases (skip-grant +
+// ALTER); the surrounding stop/start/secrets-write is orchestrated by the
+// `mariadb_password_reset` Tauri command so it can reuse the supervisor's
+// stop/start methods directly.
+
+#[cfg(windows)]
+const SKIP_GRANT_BOOT_TIMEOUT: Duration = Duration::from_secs(15);
+
+/// Spawn a private mysqld with `--skip-grant-tables --bind-address=127.0.0.1`,
+/// set root's password to `new_password`, then graceful-shutdown the
+/// recovery server. Caller MUST have stopped the supervised mysqld first
+/// (otherwise this fails with "port busy" before doing anything risky).
+///
+/// Returns one of the same string-tagged errors the rest of the module
+/// uses (`"empty_password"`, `"invalid_password"`, `"binary_missing"`,
+/// `"skip_grant_boot_timeout"`, `"alter_failed:<stderr>"`,
+/// `"spawn:<io-error>"`).
+pub async fn reset_via_skip_grant(
+    install_dir: &Path,
+    port: u16,
+    new_password: &str,
+) -> Result<(), String> {
+    if new_password.is_empty() {
+        return Err("empty_password".into());
+    }
+    // Reject anything that would either break the secrets TOML round-trip
+    // or require us to escape the value when interpolating into the
+    // ALTER USER statement below.
+    if new_password.len() > 256
+        || new_password
+            .chars()
+            .any(|c| c == '\'' || c == '\\' || c.is_control())
+    {
+        return Err("invalid_password".into());
+    }
+
+    #[cfg(not(windows))]
+    {
+        let _ = (install_dir, port);
+        return Err("binary_missing".into());
+    }
+
+    #[cfg(windows)]
+    {
+        let mysqld = install_dir
+            .join("bin")
+            .join("mariadb")
+            .join("bin")
+            .join("mysqld.exe");
+        let mysql = install_dir
+            .join("bin")
+            .join("mariadb")
+            .join("bin")
+            .join("mysql.exe");
+        let config = install_dir.join("config").join("my.ini");
+        if !mysqld.is_file() || !mysql.is_file() {
+            return Err("binary_missing".into());
+        }
+
+        tracing::info!(port, "mariadb_auth: launching skip-grant-tables mysqld");
+
+        // Bind explicitly to 127.0.0.1 even when my.ini has 0.0.0.0 — we
+        // don't want a 5-second window where the password-less recovery
+        // server is reachable from the LAN.
+        let mut child = Command::new(&mysqld)
+            .arg(format!("--defaults-file={}", config.display()))
+            .arg(format!("--port={port}"))
+            .arg("--bind-address=127.0.0.1")
+            .arg("--skip-grant-tables")
+            .arg("--console")
+            .arg("--standalone")
+            .stdin(std::process::Stdio::null())
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .creation_flags(CREATE_NO_WINDOW)
+            .spawn()
+            .map_err(|e| format!("spawn:{e}"))?;
+
+        // Poll for readiness — skip-grant accepts any password, so a
+        // successful mysql connection is also our "mysqld is up" signal.
+        if !wait_until_skip_grant_ready(&mysql, port, SKIP_GRANT_BOOT_TIMEOUT).await {
+            tracing::warn!("mariadb_auth: skip-grant mysqld did not become ready");
+            let _ = child.start_kill();
+            let _ = timeout(Duration::from_secs(5), child.wait()).await;
+            return Err("skip_grant_boot_timeout".into());
+        }
+
+        // FLUSH PRIVILEGES first so MariaDB reloads the grant tables and
+        // accepts ALTER USER. Then update both the localhost row (always
+        // present) and the 127.0.0.1 row (only on some installs). The
+        // `IF EXISTS` clause makes the second statement portable across
+        // MariaDB versions where the row may or may not exist.
+        let pw = new_password;
+        let sql = format!(
+            "FLUSH PRIVILEGES; \
+             ALTER USER 'root'@'localhost' IDENTIFIED BY '{pw}'; \
+             ALTER USER IF EXISTS 'root'@'127.0.0.1' IDENTIFIED BY '{pw}'; \
+             FLUSH PRIVILEGES;"
+        );
+
+        let alter = Command::new(&mysql)
+            .arg("-u")
+            .arg("root")
+            .arg("-h")
+            .arg("127.0.0.1")
+            .arg("-P")
+            .arg(port.to_string())
+            .arg("--protocol=tcp")
+            .arg("-e")
+            .arg(&sql)
+            .stdin(std::process::Stdio::null())
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::piped())
+            .creation_flags(CREATE_NO_WINDOW)
+            .output()
+            .await
+            .map_err(|e| format!("spawn:{e}"))?;
+
+        teardown_recovery_mysqld(
+            install_dir,
+            port,
+            alter.status.success().then_some(new_password),
+            &mut child,
+        )
+        .await;
+
+        if !alter.status.success() {
+            let stderr = String::from_utf8_lossy(&alter.stderr).trim().to_string();
+            return Err(format!("alter_failed:{stderr}"));
+        }
+        tracing::info!("mariadb_auth: root password reset via skip-grant-tables");
+        Ok(())
+    }
+}
+
+/// Poll `mysql -u root` (no password) every 500ms until it succeeds or
+/// `deadline` elapses. Skip-grant mode accepts any credentials, so a
+/// successful connection means mysqld is fully up.
+#[cfg(windows)]
+async fn wait_until_skip_grant_ready(mysql: &Path, port: u16, deadline: Duration) -> bool {
+    let start = std::time::Instant::now();
+    while start.elapsed() < deadline {
+        let res = Command::new(mysql)
+            .arg("-u")
+            .arg("root")
+            .arg("-h")
+            .arg("127.0.0.1")
+            .arg("-P")
+            .arg(port.to_string())
+            .arg("--protocol=tcp")
+            .arg("--connect-timeout=1")
+            .arg("-N")
+            .arg("-e")
+            .arg("SELECT 1")
+            .stdin(std::process::Stdio::null())
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .creation_flags(CREATE_NO_WINDOW)
+            .status()
+            .await;
+        if res.is_ok_and(|s| s.success()) {
+            return true;
+        }
+        tokio::time::sleep(Duration::from_millis(500)).await;
+    }
+    false
+}
+
+/// Stop the recovery mysqld. Prefer a graceful `mysqladmin shutdown` with
+/// the freshly-set password — `TerminateProcess` works but leaves InnoDB
+/// doing crash recovery on the next boot, costing a few seconds users can
+/// feel. Falls back to `start_kill` when the password isn't usable yet
+/// (ALTER failed) or mysqladmin is missing.
+#[cfg(windows)]
+async fn teardown_recovery_mysqld(
+    install_dir: &Path,
+    port: u16,
+    password: Option<&str>,
+    child: &mut tokio::process::Child,
+) {
+    let mysqladmin = install_dir
+        .join("bin")
+        .join("mariadb")
+        .join("bin")
+        .join("mysqladmin.exe");
+    let mut graceful = false;
+    if let Some(pw) = password {
+        if mysqladmin.is_file() {
+            let res = Command::new(&mysqladmin)
+                .env("MYSQL_PWD", pw)
+                .arg("-u")
+                .arg("root")
+                .arg("-h")
+                .arg("127.0.0.1")
+                .arg("-P")
+                .arg(port.to_string())
+                .arg("--protocol=tcp")
+                .arg("--connect-timeout=2")
+                .arg("shutdown")
+                .stdin(std::process::Stdio::null())
+                .stdout(std::process::Stdio::null())
+                .stderr(std::process::Stdio::null())
+                .creation_flags(CREATE_NO_WINDOW)
+                .status()
+                .await;
+            graceful = res.is_ok_and(|s| s.success());
+        }
+    }
+    if !graceful {
+        let _ = child.start_kill();
+    }
+    let _ = timeout(Duration::from_secs(10), child.wait()).await;
+}
+
+/// Persist `new_password` to `madistack-secrets.toml` without verifying
+/// against the live mysqld. Used right after [`reset_via_skip_grant`]
+/// succeeds — at that point we know the value matches the DB because we
+/// just set it, so re-running [`try_login`] would be wasted work.
+pub fn save_secret_unverified(install_dir: &Path, new_password: &str) -> Result<(), String> {
+    let mut s = secrets::load(install_dir)
+        .map_err(|e| format!("read_secrets:{e}"))?
+        .unwrap_or_default();
+    s.mariadb_root_password = new_password.to_string();
+    secrets::save(install_dir, &s).map_err(|e| format!("write_secrets:{e}"))?;
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn reset_rejects_empty_password() {
+        let dir = tempfile::tempdir().unwrap();
+        assert_eq!(
+            reset_via_skip_grant(dir.path(), 3306, "").await.unwrap_err(),
+            "empty_password"
+        );
+    }
+
+    #[tokio::test]
+    async fn reset_rejects_unsafe_chars() {
+        let dir = tempfile::tempdir().unwrap();
+        for bad in ["pw'with-quote", "pw\\with-back", "pw\nwith-ctrl"] {
+            let err = reset_via_skip_grant(dir.path(), 3306, bad)
+                .await
+                .unwrap_err();
+            assert_eq!(err, "invalid_password", "expected {bad:?} to fail");
+        }
+    }
+
+    #[tokio::test]
+    async fn reset_returns_binary_missing_when_mysqld_absent() {
+        let dir = tempfile::tempdir().unwrap();
+        // No bin/mariadb/ at all → binary_missing, not panic.
+        assert_eq!(
+            reset_via_skip_grant(dir.path(), 3306, "abcDEF12345678901234567")
+                .await
+                .unwrap_err(),
+            "binary_missing"
+        );
+    }
+
+    #[test]
+    fn save_secret_unverified_round_trips() {
+        let dir = tempfile::tempdir().unwrap();
+        save_secret_unverified(dir.path(), "newSecret123").unwrap();
+        let loaded = secrets::load(dir.path()).unwrap().unwrap();
+        assert_eq!(loaded.mariadb_root_password, "newSecret123");
+    }
+}

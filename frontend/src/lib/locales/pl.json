@@ -102,7 +102,14 @@
       "drift_success": "Hasło zsynchronizowane.",
       "resync_error_access_denied": "Niepoprawne hasło — MariaDB je odrzucił.",
       "resync_error_unreachable": "MariaDB nie odpowiada. Uruchom usługę i spróbuj ponownie.",
-      "resync_error_empty": "Wpisz hasło."
+      "resync_error_empty": "Wpisz hasło.",
+      "reset_hint": "Zapomniałeś hasła? Wykonaj reset przez skip-grant: MadiStack zatrzyma MariaDB na ~5s, ustawi nowe losowe hasło i uruchomi ponownie.",
+      "reset_via_skip_grant": "Resetuj przez skip-grant",
+      "resetting": "Resetowanie…",
+      "reset_confirm": "MariaDB zostanie zatrzymane na ~5 sekund w celu zresetowania hasła roota. Otwarte połączenia (PHP, CLI) zostaną zerwane. Kontynuować?",
+      "reset_error_binary_missing": "Nie znaleziono mysqld.exe lub mysql.exe — zainstaluj MariaDB ponownie.",
+      "reset_error_boot_timeout": "Serwer naprawczy nie wystartował na czas. Spróbuj ponownie za chwilę.",
+      "reset_error_alter_failed": "ALTER USER nie powiodło się. Zobacz logi MariaDB po szczegóły."
     }
   },
   "sites": {

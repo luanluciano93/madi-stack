@@ -102,7 +102,14 @@
       "drift_success": "A jelszó szinkronizálva.",
       "resync_error_access_denied": "Hibás jelszó — a MariaDB elutasította.",
       "resync_error_unreachable": "A MariaDB nem válaszol. Indítsd el a szolgáltatást és próbáld újra.",
-      "resync_error_empty": "Add meg a jelszót."
+      "resync_error_empty": "Add meg a jelszót.",
+      "reset_hint": "Elfelejtetted a jelszót? Futtass skip-grant visszaállítást: a MadiStack ~5 mp-re leállítja a MariaDB-t, új véletlen jelszót állít be, majd újraindítja.",
+      "reset_via_skip_grant": "Visszaállítás skip-granttal",
+      "resetting": "Visszaállítás…",
+      "reset_confirm": "A MariaDB ~5 másodpercre leáll, hogy visszaállítsuk a root jelszót. A nyitott kapcsolatok (PHP, CLI) megszakadnak. Folytatja?",
+      "reset_error_binary_missing": "Nem található a mysqld.exe vagy a mysql.exe — telepítsd újra a MariaDB-t.",
+      "reset_error_boot_timeout": "A helyreállító szerver nem indult el időben. Próbáld újra néhány másodperc múlva.",
+      "reset_error_alter_failed": "Az ALTER USER nem sikerült. A részletekért nézd meg a MariaDB naplóit."
     }
   },
   "sites": {
