@@ -268,6 +268,20 @@ pub fn pma_install_info(state: tauri::State<'_, AppState>) -> PmaInstallInfo {
     }
 }
 
+/// Return the auto-generated MariaDB root password from
+/// `madistack-secrets.toml`, or `None` when MariaDB hasn't been bootstrapped
+/// yet (no secrets file, or password field empty). The Configurações tab
+/// surfaces this so users connecting from PHP/CLI/external tools don't have
+/// to crack the TOML open in Notepad.
+#[tauri::command]
+pub fn mariadb_root_password(state: tauri::State<'_, AppState>) -> Result<Option<String>, String> {
+    let password = madi_services::secrets::load(state.supervisor.install_dir())
+        .map_err(|e| e.to_string())?
+        .map(|s| s.mariadb_root_password)
+        .filter(|p| !p.is_empty());
+    Ok(password)
+}
+
 /// Return the absolute install directory (where `madistack.exe` lives).
 /// Used by the "Abrir pasta" button in the sidebar.
 #[tauri::command]

@@ -85,7 +85,16 @@
     "firewall_removed": "Reglas eliminadas.",
     "port_in_use_by_self": "en uso por el propio MadiStack",
     "port_occupied_unknown": "ocupado por proceso desconocido",
-    "port_occupied_by": "ocupado por pid {pid} ({name})"
+    "port_occupied_by": "ocupado por pid {pid} ({name})",
+    "mariadb_root_password": {
+      "legend": "Contraseña root de MariaDB",
+      "label": "Contraseña",
+      "show": "Mostrar",
+      "hide": "Ocultar",
+      "copied": "¡Copiado!",
+      "hint": "Use el usuario 'root' al conectarse desde PHP, CLI o herramientas externas.",
+      "not_initialized": "MariaDB aún no se ha inicializado. Inicie el servicio al menos una vez para generar la contraseña."
+    }
   },
   "sites": {
     "title": "Sitios",

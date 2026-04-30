@@ -50,6 +50,30 @@
   let error = $state<string | null>(null);
   let inspections = $state<Record<string, PortInspection>>({});
 
+  let mariadbPassword = $state<string | null>(null);
+  let mariadbPasswordRevealed = $state(false);
+  let mariadbPasswordCopied = $state(false);
+
+  async function refreshMariadbPassword() {
+    try {
+      mariadbPassword = await ipc.mariadbRootPassword();
+    } catch {
+      // keep previous value — surfacing an error here would be noise
+      mariadbPassword = null;
+    }
+  }
+
+  async function copyMariadbPassword() {
+    if (!mariadbPassword) return;
+    try {
+      await navigator.clipboard.writeText(mariadbPassword);
+      mariadbPasswordCopied = true;
+      setTimeout(() => (mariadbPasswordCopied = false), 1500);
+    } catch {
+      // clipboard blocked — user can still reveal and select manually
+    }
+  }
+
   type PortKey = 'http' | 'https' | 'mariadb' | 'php_fcgi';
 
   async function refreshPort(key: PortKey, value: number) {
@@ -80,6 +104,7 @@
     } finally {
       loading = false;
     }
+    await refreshMariadbPassword();
   });
 
   async function save() {
@@ -256,6 +281,40 @@
           <option value="light">{$_('config.theme_light')}</option>
         </select>
       </label>
+    </fieldset>
+
+    <fieldset class="max-w-md space-y-2 text-sm">
+      <legend class="mb-2 text-zinc-400">{$_('config.mariadb_root_password.legend')}</legend>
+      {#if mariadbPassword}
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="text-zinc-400">{$_('config.mariadb_root_password.label')}:</span>
+          <code class="rounded bg-zinc-950 px-2 py-0.5 font-mono text-zinc-100">
+            {mariadbPasswordRevealed ? mariadbPassword : '••••••••••••'}
+          </code>
+          <button
+            type="button"
+            onclick={() => (mariadbPasswordRevealed = !mariadbPasswordRevealed)}
+            class="rounded-md border border-zinc-700 bg-zinc-900 px-2 py-0.5 text-xs hover:bg-zinc-800"
+          >
+            {mariadbPasswordRevealed
+              ? $_('config.mariadb_root_password.hide')
+              : $_('config.mariadb_root_password.show')}
+          </button>
+          <button
+            type="button"
+            onclick={copyMariadbPassword}
+            class="rounded-md border border-zinc-700 bg-zinc-900 px-2 py-0.5 text-xs hover:bg-zinc-800"
+          >
+            {$_('actions.copy')}
+          </button>
+          {#if mariadbPasswordCopied}
+            <span class="text-xs text-emerald-400">{$_('config.mariadb_root_password.copied')}</span>
+          {/if}
+        </div>
+        <p class="text-xs text-zinc-500">{$_('config.mariadb_root_password.hint')}</p>
+      {:else}
+        <p class="text-xs text-zinc-500">{$_('config.mariadb_root_password.not_initialized')}</p>
+      {/if}
     </fieldset>
 
     <fieldset class="max-w-md space-y-2 text-sm">
