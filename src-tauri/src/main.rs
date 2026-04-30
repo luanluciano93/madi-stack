@@ -31,6 +31,18 @@ fn main() {
         .init();
 
     tauri::Builder::default()
+        // Single-instance MUST be the first plugin: a second invocation
+        // forwards its args to this callback and exits before any other
+        // setup runs. Without it, a duplicate boot would race with us on
+        // the service ports (nginx :80, php-cgi :9000, mariadb :3306) and
+        // corrupt madistack.toml. The callback focuses the existing window.
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            if let Some(w) = app.get_webview_window("main") {
+                let _ = w.show();
+                let _ = w.unminimize();
+                let _ = w.set_focus();
+            }
+        }))
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_fs::init())
