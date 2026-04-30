@@ -2,6 +2,7 @@
   import { _ } from 'svelte-i18n';
   import { ipc } from '$lib/ipc';
   import { theme, toggleTheme } from '$lib/theme';
+  import { appVersion } from '$lib/version';
   import logoUrl from '../../assets/logo.png';
 
   /// Open the install directory (where `madistack.exe` lives) in Explorer.
@@ -60,7 +61,7 @@
     <img src={logoUrl} alt="MadiStack" class="h-8 w-8 shrink-0 rounded" draggable="false" />
     <div class="ml-3 hidden sm:block">
       <h1 class="text-lg font-bold leading-tight tracking-tight">MadiStack</h1>
-      <p class="text-xs text-zinc-500">v0.1.2 — dev</p>
+      <p class="text-xs text-zinc-500">v{$appVersion}</p>
     </div>
   </div>
 
