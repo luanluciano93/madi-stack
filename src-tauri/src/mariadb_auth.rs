@@ -168,7 +168,9 @@ async fn try_login(
     // the UI banner to feel laggy.
     let output = timeout(Duration::from_secs(5), cmd.output())
         .await
-        .map_err(|_| std::io::Error::new(std::io::ErrorKind::TimedOut, "mysql probe timed out"))??;
+        .map_err(|_| {
+            std::io::Error::new(std::io::ErrorKind::TimedOut, "mysql probe timed out")
+        })??;
 
     if output.status.success() {
         return Ok(LoginOutcome::Ok);
@@ -438,7 +440,9 @@ mod tests {
     async fn reset_rejects_empty_password() {
         let dir = tempfile::tempdir().unwrap();
         assert_eq!(
-            reset_via_skip_grant(dir.path(), 3306, "").await.unwrap_err(),
+            reset_via_skip_grant(dir.path(), 3306, "")
+                .await
+                .unwrap_err(),
             "empty_password"
         );
     }
