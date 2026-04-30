@@ -1,12 +1,25 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { _ } from 'svelte-i18n';
+  import { getVersion } from '@tauri-apps/api/app';
   import { open as shellOpen } from '@tauri-apps/plugin-shell';
   import { check as checkUpdate, type Update } from '@tauri-apps/plugin-updater';
   import { relaunch } from '@tauri-apps/plugin-process';
 
-  const version = '0.1.2';
+  // Pulled from tauri.conf.json at runtime so the displayed version always
+  // matches the bundled binary — bumping `Cargo.toml` / `tauri.conf.json`
+  // is the single source of truth.
+  let version = $state('…');
   const repoUrl = 'https://github.com/luanluciano93/madi-stack';
   const authorUrl = 'https://github.com/luanluciano93';
+
+  onMount(async () => {
+    try {
+      version = await getVersion();
+    } catch {
+      version = '?';
+    }
+  });
 
   function openExternal(url: string) {
     void shellOpen(url);
