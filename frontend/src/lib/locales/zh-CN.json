@@ -93,7 +93,16 @@
       "hide": "Hide",
       "copied": "Copied!",
       "hint": "Use 'root' as the user when connecting from PHP, the CLI or external tools.",
-      "not_initialized": "MariaDB hasn't been initialized yet. Start the service at least once to generate the password."
+      "not_initialized": "MariaDB hasn't been initialized yet. Start the service at least once to generate the password.",
+      "drift_title": "root 密码不同步",
+      "drift_hint": "此处保存的密码被 MariaDB 拒绝了 — 可能通过 phpMyAdmin 改过。输入当前密码以同步。",
+      "drift_placeholder": "当前 root 密码",
+      "drift_save": "同步",
+      "drift_saving": "同步中…",
+      "drift_success": "密码已同步。",
+      "resync_error_access_denied": "密码错误 — MariaDB 拒绝了。",
+      "resync_error_unreachable": "MariaDB 无响应。请启动服务后重试。",
+      "resync_error_empty": "请输入密码。"
     }
   },
   "sites": {

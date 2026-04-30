@@ -93,7 +93,16 @@
       "hide": "Hide",
       "copied": "Copied!",
       "hint": "Use 'root' as the user when connecting from PHP, the CLI or external tools.",
-      "not_initialized": "MariaDB hasn't been initialized yet. Start the service at least once to generate the password."
+      "not_initialized": "MariaDB hasn't been initialized yet. Start the service at least once to generate the password.",
+      "drift_title": "A root jelszó nincs szinkronban",
+      "drift_hint": "Az itt mentett jelszót a MariaDB elutasította — valószínűleg phpMyAdminon át lett megváltoztatva. Add meg az aktuális jelszót a szinkronizáláshoz.",
+      "drift_placeholder": "Aktuális root jelszó",
+      "drift_save": "Szinkronizálás",
+      "drift_saving": "Szinkronizálás…",
+      "drift_success": "A jelszó szinkronizálva.",
+      "resync_error_access_denied": "Hibás jelszó — a MariaDB elutasította.",
+      "resync_error_unreachable": "A MariaDB nem válaszol. Indítsd el a szolgáltatást és próbáld újra.",
+      "resync_error_empty": "Add meg a jelszót."
     }
   },
   "sites": {

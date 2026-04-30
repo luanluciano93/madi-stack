@@ -1,11 +1,18 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onDestroy, onMount } from 'svelte';
   import { _ } from 'svelte-i18n';
   import { get } from 'svelte/store';
   import { AVAILABLE_LOCALES, LOCALE_LABELS, setLocale, type LocaleCode } from '$lib/i18n';
   import { theme, type Theme } from '$lib/theme';
   import { tour } from '$lib/tour';
-  import { ipc, type AppConfigDto, type Language, type PortInspection } from '$lib/ipc';
+  import {
+    ipc,
+    onServiceStatus,
+    type AppConfigDto,
+    type Language,
+    type MariadbPasswordStatus,
+    type PortInspection,
+  } from '$lib/ipc';
 
   // The backend stores `Language` as kebab-case lowercase (`pt-br`, `zh-cn`),
   // while svelte-i18n uses BCP-47 codes (`pt-BR`, `zh-CN`). Map one to the
@@ -54,12 +61,67 @@
   let mariadbPasswordRevealed = $state(false);
   let mariadbPasswordCopied = $state(false);
 
+  /// Drift state of the password vs. the running mysqld. `null` while
+  /// the first probe is in flight, then one of the discriminated
+  /// variants. Only `drift` triggers the re-sync banner.
+  let mariadbPasswordStatus = $state<MariadbPasswordStatus | null>(null);
+  let resyncInput = $state('');
+  let resyncBusy = $state(false);
+  let resyncError = $state<string | null>(null);
+  /// Set after a successful resync so the banner shows a green
+  /// confirmation for ~2s before disappearing as the next probe
+  /// flips the status to `in_sync`.
+  let resyncSucceeded = $state(false);
+
   async function refreshMariadbPassword() {
     try {
       mariadbPassword = await ipc.mariadbRootPassword();
     } catch {
       // keep previous value — surfacing an error here would be noise
       mariadbPassword = null;
+    }
+  }
+
+  async function refreshMariadbPasswordStatus() {
+    try {
+      mariadbPasswordStatus = await ipc.mariadbPasswordCheck();
+    } catch {
+      // best-effort — the banner just stays hidden
+      mariadbPasswordStatus = { status: 'probe_error' };
+    }
+  }
+
+  async function resyncMariadbPassword() {
+    if (resyncBusy) return;
+    resyncBusy = true;
+    resyncError = null;
+    resyncSucceeded = false;
+    const t = get(_);
+    try {
+      await ipc.mariadbPasswordSave(resyncInput);
+      resyncSucceeded = true;
+      resyncInput = '';
+      // Refresh both: the displayed (masked) password value and the
+      // probe state. The latter flipping to `in_sync` is what hides
+      // the banner.
+      await Promise.all([refreshMariadbPassword(), refreshMariadbPasswordStatus()]);
+    } catch (e) {
+      // Backend returns stable keys (`access_denied`, `unreachable`,
+      // `empty_password`, `probe_error`, `read_secrets:...`,
+      // `write_secrets:...`). Map the known ones; fall through to the
+      // raw error otherwise so we can debug unexpected branches.
+      const raw = String(e);
+      if (raw.includes('access_denied')) {
+        resyncError = t('config.mariadb_root_password.resync_error_access_denied');
+      } else if (raw.includes('unreachable')) {
+        resyncError = t('config.mariadb_root_password.resync_error_unreachable');
+      } else if (raw.includes('empty_password')) {
+        resyncError = t('config.mariadb_root_password.resync_error_empty');
+      } else {
+        resyncError = raw;
+      }
+    } finally {
+      resyncBusy = false;
     }
   }
 
@@ -95,6 +157,12 @@
     ]);
   }
 
+  /// Tear-down for the `service-status` listener. We re-probe the
+  /// password whenever MariaDB transitions to `running` so a user who
+  /// changed their password through phpMyAdmin and then restarts the
+  /// service sees the banner without having to leave/re-enter the tab.
+  let unlistenServiceStatus: (() => void) | null = null;
+
   onMount(async () => {
     try {
       config = await ipc.getConfig();
@@ -104,7 +172,23 @@
     } finally {
       loading = false;
     }
-    await refreshMariadbPassword();
+    await Promise.all([refreshMariadbPassword(), refreshMariadbPasswordStatus()]);
+
+    unlistenServiceStatus = await onServiceStatus((ev) => {
+      if (ev.slug === 'mariadb' && ev.status === 'running') {
+        // Brief delay so the just-started mysqld is past `--bootstrap`
+        // chatter and accepting connections — otherwise the probe
+        // races and reports `unreachable`.
+        setTimeout(() => void refreshMariadbPasswordStatus(), 800);
+      }
+    });
+  });
+
+  onDestroy(() => {
+    if (unlistenServiceStatus) {
+      unlistenServiceStatus();
+      unlistenServiceStatus = null;
+    }
   });
 
   async function save() {
@@ -308,12 +392,57 @@
             {$_('actions.copy')}
           </button>
           {#if mariadbPasswordCopied}
-            <span class="text-xs text-emerald-400">{$_('config.mariadb_root_password.copied')}</span>
+            <span class="text-xs text-emerald-400">{$_('config.mariadb_root_password.copied')}</span
+            >
           {/if}
         </div>
         <p class="text-xs text-zinc-500">{$_('config.mariadb_root_password.hint')}</p>
       {:else}
         <p class="text-xs text-zinc-500">{$_('config.mariadb_root_password.not_initialized')}</p>
+      {/if}
+
+      <!-- Drift banner: only renders when the live password probe
+           reports the secrets value is wrong. Stays hidden in
+           `in_sync` / `unreachable` / `no_secret` / `probe_error`. -->
+      {#if mariadbPasswordStatus?.status === 'drift'}
+        <div class="rounded-md border border-amber-700/60 bg-amber-950/40 p-3 text-amber-100">
+          <p class="text-sm font-medium">{$_('config.mariadb_root_password.drift_title')}</p>
+          <p class="mt-1 text-xs text-amber-200/80">
+            {$_('config.mariadb_root_password.drift_hint')}
+          </p>
+          <form
+            class="mt-2 flex flex-wrap items-center gap-2"
+            onsubmit={(e) => {
+              e.preventDefault();
+              void resyncMariadbPassword();
+            }}
+          >
+            <input
+              type="password"
+              bind:value={resyncInput}
+              placeholder={$_('config.mariadb_root_password.drift_placeholder')}
+              class="flex-1 rounded-md border border-zinc-700 bg-zinc-900 px-2 py-1 text-xs text-zinc-100"
+              autocomplete="off"
+              spellcheck="false"
+            />
+            <button
+              type="submit"
+              disabled={resyncBusy || resyncInput.length === 0}
+              class="rounded-md bg-brand-600 px-3 py-1 text-xs font-medium text-white hover:bg-brand-500 disabled:opacity-40"
+            >
+              {resyncBusy
+                ? $_('config.mariadb_root_password.drift_saving')
+                : $_('config.mariadb_root_password.drift_save')}
+            </button>
+          </form>
+          {#if resyncError}
+            <p class="mt-2 text-xs text-red-300">{resyncError}</p>
+          {/if}
+        </div>
+      {:else if resyncSucceeded}
+        <p class="text-xs text-emerald-400">
+          {$_('config.mariadb_root_password.drift_success')}
+        </p>
       {/if}
     </fieldset>
 

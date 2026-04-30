@@ -93,7 +93,16 @@
       "hide": "Hide",
       "copied": "Copied!",
       "hint": "Use 'root' as the user when connecting from PHP, the CLI or external tools.",
-      "not_initialized": "MariaDB hasn't been initialized yet. Start the service at least once to generate the password."
+      "not_initialized": "MariaDB hasn't been initialized yet. Start the service at least once to generate the password.",
+      "drift_title": "Root-Passwort nicht synchron",
+      "drift_hint": "Das hier gespeicherte Passwort wurde von MariaDB abgelehnt — wahrscheinlich über phpMyAdmin geändert. Gib das aktuelle Passwort ein, um zu synchronisieren.",
+      "drift_placeholder": "Aktuelles Root-Passwort",
+      "drift_save": "Synchronisieren",
+      "drift_saving": "Wird synchronisiert…",
+      "drift_success": "Passwort synchronisiert.",
+      "resync_error_access_denied": "Falsches Passwort — MariaDB hat es abgelehnt.",
+      "resync_error_unreachable": "MariaDB antwortet nicht. Starte den Dienst und versuche es erneut.",
+      "resync_error_empty": "Gib das Passwort ein."
     }
   },
   "sites": {

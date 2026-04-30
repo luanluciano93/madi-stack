@@ -93,7 +93,16 @@
       "hide": "Ocultar",
       "copied": "Copiado!",
       "hint": "Use o usuário 'root' ao conectar via PHP, CLI ou ferramentas externas.",
-      "not_initialized": "MariaDB ainda não foi inicializado. Inicie o serviço pelo menos uma vez para gerar a senha."
+      "not_initialized": "MariaDB ainda não foi inicializado. Inicie o serviço pelo menos uma vez para gerar a senha.",
+      "drift_title": "Senha do root fora de sincronia",
+      "drift_hint": "A senha salva aqui foi rejeitada pelo MariaDB — provavelmente foi alterada pelo phpMyAdmin. Digite a senha atual para sincronizar.",
+      "drift_placeholder": "Senha atual do root",
+      "drift_save": "Sincronizar",
+      "drift_saving": "Sincronizando…",
+      "drift_success": "Senha sincronizada.",
+      "resync_error_access_denied": "Senha incorreta — o MariaDB recusou.",
+      "resync_error_unreachable": "MariaDB não está respondendo. Suba o serviço e tente de novo.",
+      "resync_error_empty": "Digite a senha."
     }
   },
   "sites": {

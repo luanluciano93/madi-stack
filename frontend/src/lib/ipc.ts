@@ -136,6 +136,8 @@ export const ipc = {
   openTerminal: (cwd: string) => invoke<void>('open_terminal', { cwd }),
   pmaInstallInfo: () => invoke<PmaInstallInfo>('pma_install_info'),
   mariadbRootPassword: () => invoke<string | null>('mariadb_root_password'),
+  mariadbPasswordCheck: () => invoke<MariadbPasswordStatus>('mariadb_password_check'),
+  mariadbPasswordSave: (password: string) => invoke<void>('mariadb_password_save', { password }),
   mariadbListDatabases: () => invoke<string[]>('mariadb_list_databases'),
   mariadbListBackups: () => invoke<BackupInfo[]>('mariadb_list_backups'),
   mariadbBackup: (database: string) => invoke<string>('mariadb_backup', { database }),
@@ -169,6 +171,17 @@ export interface PmaInstallInfo {
   install_count: number;
   password: string | null;
 }
+
+/// Drift state of the MariaDB root password — produced by the backend
+/// probing the live mysqld with the password persisted in
+/// `madistack-secrets.toml`. Only `drift` causes the UI to act; the
+/// other variants either mean "all good" or "can't tell yet".
+export type MariadbPasswordStatus =
+  | { status: 'in_sync' }
+  | { status: 'drift' }
+  | { status: 'unreachable' }
+  | { status: 'no_secret' }
+  | { status: 'probe_error' };
 
 export interface VhostDto {
   name: string;

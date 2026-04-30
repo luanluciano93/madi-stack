@@ -93,7 +93,16 @@
       "hide": "Hide",
       "copied": "Copied!",
       "hint": "Use 'root' as the user when connecting from PHP, the CLI or external tools.",
-      "not_initialized": "MariaDB hasn't been initialized yet. Start the service at least once to generate the password."
+      "not_initialized": "MariaDB hasn't been initialized yet. Start the service at least once to generate the password.",
+      "drift_title": "Root password out of sync",
+      "drift_hint": "The password saved here was rejected by MariaDB — likely changed via phpMyAdmin. Enter the current password to sync.",
+      "drift_placeholder": "Current root password",
+      "drift_save": "Sync",
+      "drift_saving": "Syncing…",
+      "drift_success": "Password synced.",
+      "resync_error_access_denied": "Wrong password — MariaDB refused it.",
+      "resync_error_unreachable": "MariaDB is not responding. Start the service and try again.",
+      "resync_error_empty": "Enter the password."
     }
   },
   "sites": {

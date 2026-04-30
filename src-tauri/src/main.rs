@@ -7,6 +7,7 @@
 mod backup;
 mod commands;
 mod install;
+mod mariadb_auth;
 mod mkcert;
 mod state;
 mod tray;
@@ -117,6 +118,8 @@ fn main() {
             commands::service_pid,
             commands::pma_install_info,
             commands::mariadb_root_password,
+            commands::mariadb_password_check,
+            commands::mariadb_password_save,
             commands::open_path,
             commands::open_terminal,
             commands::mkcert_status,

@@ -93,7 +93,16 @@
       "hide": "Hide",
       "copied": "Copied!",
       "hint": "Use 'root' as the user when connecting from PHP, the CLI or external tools.",
-      "not_initialized": "MariaDB hasn't been initialized yet. Start the service at least once to generate the password."
+      "not_initialized": "MariaDB hasn't been initialized yet. Start the service at least once to generate the password.",
+      "drift_title": "Root-wachtwoord niet synchroon",
+      "drift_hint": "Het hier opgeslagen wachtwoord is geweigerd door MariaDB — waarschijnlijk gewijzigd via phpMyAdmin. Voer het huidige wachtwoord in om te synchroniseren.",
+      "drift_placeholder": "Huidig root-wachtwoord",
+      "drift_save": "Synchroniseren",
+      "drift_saving": "Synchroniseren…",
+      "drift_success": "Wachtwoord gesynchroniseerd.",
+      "resync_error_access_denied": "Verkeerd wachtwoord — MariaDB weigerde het.",
+      "resync_error_unreachable": "MariaDB reageert niet. Start de service en probeer opnieuw.",
+      "resync_error_empty": "Voer het wachtwoord in."
     }
   },
   "sites": {

@@ -93,7 +93,16 @@
       "hide": "Hide",
       "copied": "Copied!",
       "hint": "Use 'root' as the user when connecting from PHP, the CLI or external tools.",
-      "not_initialized": "MariaDB hasn't been initialized yet. Start the service at least once to generate the password."
+      "not_initialized": "MariaDB hasn't been initialized yet. Start the service at least once to generate the password.",
+      "drift_title": "Parola root nu este sincronizată",
+      "drift_hint": "Parola salvată aici a fost respinsă de MariaDB — probabil schimbată prin phpMyAdmin. Introdu parola actuală pentru a sincroniza.",
+      "drift_placeholder": "Parola actuală a root",
+      "drift_save": "Sincronizează",
+      "drift_saving": "Sincronizare…",
+      "drift_success": "Parola sincronizată.",
+      "resync_error_access_denied": "Parolă incorectă — MariaDB a respins-o.",
+      "resync_error_unreachable": "MariaDB nu răspunde. Pornește serviciul și încearcă din nou.",
+      "resync_error_empty": "Introdu parola."
     }
   },
   "sites": {

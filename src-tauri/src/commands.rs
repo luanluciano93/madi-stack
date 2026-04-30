@@ -282,6 +282,45 @@ pub fn mariadb_root_password(state: tauri::State<'_, AppState>) -> Result<Option
     Ok(password)
 }
 
+/// Probe the running MariaDB with the password currently in
+/// `madistack-secrets.toml`. The Configurações tab calls this on mount
+/// and after a `service-status` event flips MariaDB to `running`, so a
+/// drift caused by a phpMyAdmin password change pops a banner without
+/// the user having to refresh.
+///
+/// Returns a discriminated union by `status` (`in_sync` / `drift` /
+/// `unreachable` / `no_secret` / `probe_error`). Anything other than
+/// `drift` causes the UI to hide the banner.
+#[tauri::command]
+pub async fn mariadb_password_check(
+    state: tauri::State<'_, AppState>,
+) -> Result<crate::mariadb_auth::PasswordStatus, String> {
+    let install_dir = state.supervisor.install_dir().to_path_buf();
+    let port = state.stored.read().ports.mariadb;
+    Ok(crate::mariadb_auth::check_password(&install_dir, port).await)
+}
+
+/// Persist `password` to `madistack-secrets.toml` after confirming it
+/// authenticates against the running mysqld. Use this from the
+/// "Sincronizar" button when the user has changed the root password
+/// outside MadiStack (e.g. via phpMyAdmin) and is now telling us the
+/// real value.
+///
+/// Errors carry stable string keys (`"access_denied"`, `"unreachable"`,
+/// `"empty_password"`, `"probe_error"`, `"read_secrets:..."`,
+/// `"write_secrets:..."`) so the Svelte side can localise without
+/// matching free-form text. Does NOT run `ALTER USER` — the DB already
+/// has the value the user typed.
+#[tauri::command]
+pub async fn mariadb_password_save(
+    password: String,
+    state: tauri::State<'_, AppState>,
+) -> Result<(), String> {
+    let install_dir = state.supervisor.install_dir().to_path_buf();
+    let port = state.stored.read().ports.mariadb;
+    crate::mariadb_auth::save_password(&install_dir, port, &password).await
+}
+
 /// Return the absolute install directory (where `madistack.exe` lives).
 /// Used by the "Abrir pasta" button in the sidebar.
 #[tauri::command]
