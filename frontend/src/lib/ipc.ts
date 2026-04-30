@@ -65,6 +65,7 @@ export type Language =
 
 export interface PortConfig {
   http: number;
+  https: number;
   mariadb: number;
   php_fcgi: number;
   bind_address: string; // "127.0.0.1" or "0.0.0.0"

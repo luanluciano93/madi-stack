@@ -226,6 +226,7 @@ mod tests {
             install_dir: install,
             ports: PortConfig {
                 http: 8080,
+                https: 8443,
                 mariadb: 3310,
                 php_fcgi: 9001,
                 bind_address: std::net::Ipv4Addr::LOCALHOST,
@@ -286,9 +287,50 @@ mod tests {
         let tera = build_engine().unwrap();
         let mut tctx = c.to_tera();
         tctx.insert("site_name", "blog");
+        tctx.insert("ssl", &false);
         let out = tera.render(NAME_SITE, &tctx).unwrap();
         assert!(out.contains("server_name blog.test;"), "{out}");
         assert!(out.contains(r#"root "/m/sites/blog";"#));
+    }
+
+    #[test]
+    fn site_ssl_render_uses_https_port_and_redirects_with_port() {
+        let install = PathBuf::from("/m");
+        let docroot = PathBuf::from("/m/sites/blog");
+        let c = ctx(&install, &docroot); // https=8443
+        let tera = build_engine().unwrap();
+        let mut tctx = c.to_tera();
+        tctx.insert("site_name", "blog");
+        tctx.insert("ssl", &true);
+        tctx.insert("ssl_cert", "/m/config/certs/blog/cert.pem");
+        tctx.insert("ssl_key", "/m/config/certs/blog/key.pem");
+        let out = tera.render(NAME_SITE, &tctx).unwrap();
+        assert!(out.contains("listen 127.0.0.1:8443 ssl;"), "{out}");
+        // Non-standard https port → port must appear in the redirect target.
+        assert!(
+            out.contains("return 301 https://$host:8443$request_uri;"),
+            "{out}"
+        );
+    }
+
+    #[test]
+    fn site_ssl_render_omits_port_when_https_is_default() {
+        let install = PathBuf::from("/m");
+        let docroot = PathBuf::from("/m/sites/blog");
+        let mut c = ctx(&install, &docroot);
+        c.ports.https = 443;
+        let tera = build_engine().unwrap();
+        let mut tctx = c.to_tera();
+        tctx.insert("site_name", "blog");
+        tctx.insert("ssl", &true);
+        tctx.insert("ssl_cert", "/m/config/certs/blog/cert.pem");
+        tctx.insert("ssl_key", "/m/config/certs/blog/key.pem");
+        let out = tera.render(NAME_SITE, &tctx).unwrap();
+        assert!(out.contains("listen 127.0.0.1:443 ssl;"), "{out}");
+        assert!(
+            out.contains("return 301 https://$host$request_uri;"),
+            "{out}"
+        );
     }
 
     #[test]

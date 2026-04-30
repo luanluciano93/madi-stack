@@ -61,6 +61,7 @@
     "title": "Setări",
     "subtitle": "Ajustează porturile și preferințele generale. Modificările de port se aplică la următoarea pornire a serviciului.",
     "port_http": "Port HTTP",
+    "port_https": "Port HTTPS",
     "port_mariadb": "Port MariaDB",
     "port_php": "Port PHP FastCGI",
     "bind_address": "Adresă bind",

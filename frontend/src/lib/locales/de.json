@@ -61,6 +61,7 @@
     "title": "Einstellungen",
     "subtitle": "Ports und allgemeine Einstellungen anpassen. Portänderungen greifen beim nächsten Dienststart.",
     "port_http": "HTTP-Port",
+    "port_https": "HTTPS-Port",
     "port_mariadb": "MariaDB-Port",
     "port_php": "PHP FastCGI-Port",
     "bind_address": "Bind-Adresse",

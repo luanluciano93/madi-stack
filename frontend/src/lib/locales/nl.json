@@ -61,6 +61,7 @@
     "title": "Instellingen",
     "subtitle": "Pas poorten en algemene voorkeuren aan. Poortwijzigingen gelden bij de volgende servicestart.",
     "port_http": "HTTP-poort",
+    "port_https": "HTTPS-poort",
     "port_mariadb": "MariaDB-poort",
     "port_php": "PHP FastCGI-poort",
     "bind_address": "Bind-adres",

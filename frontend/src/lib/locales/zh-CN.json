@@ -61,6 +61,7 @@
     "title": "设置",
     "subtitle": "调整端口和常规偏好。端口更改将在下次启动服务时生效。",
     "port_http": "HTTP 端口",
+    "port_https": "HTTPS 端口",
     "port_mariadb": "MariaDB 端口",
     "port_php": "PHP FastCGI 端口",
     "bind_address": "绑定地址",

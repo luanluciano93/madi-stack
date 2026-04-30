@@ -61,6 +61,7 @@
     "title": "Configurações",
     "subtitle": "Ajuste portas e preferências gerais. Alterações de porta aplicam no próximo start do serviço.",
     "port_http": "Porta HTTP",
+    "port_https": "Porta HTTPS",
     "port_mariadb": "Porta MariaDB",
     "port_php": "Porta PHP FastCGI",
     "bind_address": "Bind address",

@@ -61,6 +61,7 @@
     "title": "Ayarlar",
     "subtitle": "Portları ve genel tercihleri ayarla. Port değişiklikleri servisin bir sonraki başlatılmasında etkili olur.",
     "port_http": "HTTP portu",
+    "port_https": "HTTPS portu",
     "port_mariadb": "MariaDB portu",
     "port_php": "PHP FastCGI portu",
     "bind_address": "Bind adresi",
